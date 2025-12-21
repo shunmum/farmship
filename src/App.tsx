@@ -4,8 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppSidebar } from "./components/AppSidebar";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AuthPage from "./pages/AuthPage";
 import PublicOrderPage from "./pages/PublicOrderPage";
 import DashboardPage from "./pages/DashboardPage";
 import CustomersPage from "./pages/CustomersPage";
@@ -32,35 +30,32 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<AuthPage />} />
           <Route path="/order/:slug" element={<PublicOrderPage />} />
           <Route
             path="/*"
             element={
-              <ProtectedRoute>
-                <div className="flex min-h-screen w-full">
-                  <AppSidebar />
-                  <main className="md:ml-16 flex-1 bg-[#f9fafb]">
-                    <Routes>
-                      <Route path="/" element={<DashboardPage />} />
-                      <Route path="/work-logs" element={<WorkLogIndexPage />} />
-                      <Route path="/work-logs/manual" element={<WorkLogManualPage />} />
-                      <Route path="/work-logs/chat" element={<WorkLogChatPage />} />
-                      <Route path="/work-logs/list" element={<WorkLogListPage />} />
-                      <Route path="/work-logs/:id" element={<WorkLogDetailPage />} />
-                      <Route path="/customers" element={<CustomersPage />} />
-                      <Route path="/orders" element={<OrdersPage />} />
-                      <Route path="/orders/:id" element={<OrderDetailPage />} />
-                      <Route path="/shipping" element={<ShippingPage />} />
-                      <Route path="/shipping/import" element={<ShipmentImportPage />} />
-                      <Route path="/history" element={<HistoryPage />} />
-                      <Route path="/invoices/batch" element={<InvoiceBatchPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                </div>
-              </ProtectedRoute>
+              <div className="flex min-h-screen w-full">
+                <AppSidebar />
+                <main className="md:ml-16 flex-1 bg-[#f9fafb]">
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/work-logs" element={<WorkLogIndexPage />} />
+                    <Route path="/work-logs/manual" element={<WorkLogManualPage />} />
+                    <Route path="/work-logs/chat" element={<WorkLogChatPage />} />
+                    <Route path="/work-logs/list" element={<WorkLogListPage />} />
+                    <Route path="/work-logs/:id" element={<WorkLogDetailPage />} />
+                    <Route path="/customers" element={<CustomersPage />} />
+                    <Route path="/orders" element={<OrdersPage />} />
+                    <Route path="/orders/:id" element={<OrderDetailPage />} />
+                    <Route path="/shipping" element={<ShippingPage />} />
+                    <Route path="/shipping/import" element={<ShipmentImportPage />} />
+                    <Route path="/history" element={<HistoryPage />} />
+                    <Route path="/invoices/batch" element={<InvoiceBatchPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
             }
           />
         </Routes>

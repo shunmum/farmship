@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { useErrorHandler } from './useErrorHandler';
+import type { Database } from '@/integrations/supabase/types';
+
+type TableNames = keyof Database['public']['Tables'];
 
 interface UseSupabaseCRUDOptions<T> {
-  tableName: string;
+  tableName: TableNames;
   orderBy?: {
     column: string;
     ascending?: boolean;
@@ -27,7 +29,6 @@ export function useSupabaseCRUD<T extends { id: string }>(
     autoFetch = true,
   } = options;
 
-  const { user } = useAuth();
   const { handleError, handleSuccess } = useErrorHandler();
 
   const [items, setItems] = useState<T[]>([]);
@@ -36,12 +37,6 @@ export function useSupabaseCRUD<T extends { id: string }>(
 
   // データ取得
   const fetchItems = useCallback(async () => {
-    if (!user) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
@@ -49,7 +44,6 @@ export function useSupabaseCRUD<T extends { id: string }>(
       const { data, error: fetchError } = await supabase
         .from(tableName)
         .select('*')
-        .eq('user_id', user.id)
         .order(orderBy.column, { ascending: orderBy.ascending });
 
       if (fetchError) throw fetchError;
@@ -62,23 +56,15 @@ export function useSupabaseCRUD<T extends { id: string }>(
     } finally {
       setLoading(false);
     }
-  }, [user, tableName, orderBy.column, orderBy.ascending, transformer, handleError]);
+  }, [tableName, orderBy.column, orderBy.ascending, transformer, handleError]);
 
   // データ追加
   const addItem = useCallback(
     async (item: Omit<T, 'id'>) => {
-      if (!user) {
-        handleError(new Error('認証されていません'), 'データの追加');
-        return { data: null, error: new Error('Not authenticated') };
-      }
-
       try {
         const { data, error: insertError } = await supabase
           .from(tableName)
-          .insert({
-            ...reverseTransformer(item),
-            user_id: user.id,
-          })
+          .insert(reverseTransformer(item as Partial<T>) as any)
           .select()
           .single();
 
@@ -92,23 +78,17 @@ export function useSupabaseCRUD<T extends { id: string }>(
         return { data: null, error: err as Error };
       }
     },
-    [user, tableName, reverseTransformer, transformer, fetchItems, handleError, handleSuccess]
+    [tableName, reverseTransformer, transformer, fetchItems, handleError, handleSuccess]
   );
 
   // データ更新
   const updateItem = useCallback(
     async (id: string, updates: Partial<T>) => {
-      if (!user) {
-        handleError(new Error('認証されていません'), 'データの更新');
-        return { data: null, error: new Error('Not authenticated') };
-      }
-
       try {
         const { data, error: updateError } = await supabase
           .from(tableName)
-          .update(reverseTransformer(updates))
+          .update(reverseTransformer(updates) as any)
           .eq('id', id)
-          .eq('user_id', user.id)
           .select()
           .single();
 
@@ -122,23 +102,17 @@ export function useSupabaseCRUD<T extends { id: string }>(
         return { data: null, error: err as Error };
       }
     },
-    [user, tableName, reverseTransformer, transformer, fetchItems, handleError, handleSuccess]
+    [tableName, reverseTransformer, transformer, fetchItems, handleError, handleSuccess]
   );
 
   // データ削除
   const deleteItem = useCallback(
     async (id: string) => {
-      if (!user) {
-        handleError(new Error('認証されていません'), 'データの削除');
-        return { error: new Error('Not authenticated') };
-      }
-
       try {
         const { error: deleteError } = await supabase
           .from(tableName)
           .delete()
-          .eq('id', id)
-          .eq('user_id', user.id);
+          .eq('id', id);
 
         if (deleteError) throw deleteError;
 
@@ -150,22 +124,17 @@ export function useSupabaseCRUD<T extends { id: string }>(
         return { error: err as Error };
       }
     },
-    [user, tableName, fetchItems, handleError, handleSuccess]
+    [tableName, fetchItems, handleError, handleSuccess]
   );
 
   // 単一データ取得
   const getItem = useCallback(
     async (id: string) => {
-      if (!user) {
-        return { data: null, error: new Error('Not authenticated') };
-      }
-
       try {
         const { data, error: fetchError } = await supabase
           .from(tableName)
           .select('*')
           .eq('id', id)
-          .eq('user_id', user.id)
           .single();
 
         if (fetchError) throw fetchError;
@@ -176,7 +145,7 @@ export function useSupabaseCRUD<T extends { id: string }>(
         return { data: null, error: err as Error };
       }
     },
-    [user, tableName, transformer, handleError]
+    [tableName, transformer, handleError]
   );
 
   // 初回フェッチ
