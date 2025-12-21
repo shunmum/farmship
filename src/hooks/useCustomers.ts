@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import type { Tables } from '@/integrations/supabase/types';
 
 export interface Recipient {
   id: string;
@@ -24,19 +24,14 @@ export interface Customer {
   recipients?: Recipient[];
 }
 
+type CustomerRow = Tables<'customers'>;
+
 export function useCustomers() {
-  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchCustomers = async () => {
-    if (!user) {
-      setCustomers([]);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
@@ -45,43 +40,23 @@ export function useCustomers() {
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (customersError) throw customersError;
 
-      // 各顧客のお届け先を取得
-      const customersWithRecipients = await Promise.all(
-        (customersData || []).map(async (customer) => {
-          const { data: recipientsData } = await supabase
-            .from('recipients')
-            .select('*')
-            .eq('customer_id', customer.id)
-            .eq('user_id', user.id);
+      const mappedCustomers: Customer[] = (customersData || []).map((customer: CustomerRow) => ({
+        id: customer.id,
+        name: customer.name,
+        address: customer.address,
+        postalCode: customer.postal_code,
+        phone: customer.phone,
+        email: customer.email || '',
+        lastPurchaseDate: '',
+        totalSpent: 0,
+        recipients: [],
+      }));
 
-          return {
-            id: customer.id,
-            name: customer.name,
-            address: customer.address,
-            postalCode: customer.postal_code,
-            phone: customer.phone,
-            email: customer.email || '',
-            lastPurchaseDate: customer.last_purchase_date || '',
-            totalSpent: Number(customer.total_spent) || 0,
-            recipients: (recipientsData || []).map((r) => ({
-              id: r.id,
-              name: r.name,
-              address: r.address,
-              postalCode: r.postal_code,
-              phone: r.phone,
-              email: r.email || undefined,
-              relation: r.relation || undefined,
-            })),
-          };
-        })
-      );
-
-      setCustomers(customersWithRecipients);
+      setCustomers(mappedCustomers);
     } catch (err) {
       console.error('Error fetching customers:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch customers');
@@ -92,16 +67,13 @@ export function useCustomers() {
 
   useEffect(() => {
     fetchCustomers();
-  }, [user]);
+  }, []);
 
   const addCustomer = async (customer: Omit<Customer, 'id' | 'lastPurchaseDate' | 'totalSpent' | 'recipients'>) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
     try {
       const { data, error } = await supabase
         .from('customers')
         .insert({
-          user_id: user.id,
           name: customer.name,
           address: customer.address,
           postal_code: customer.postalCode,
@@ -122,8 +94,6 @@ export function useCustomers() {
   };
 
   const updateCustomer = async (id: string, updates: Partial<Customer>) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
     try {
       const { data, error } = await supabase
         .from('customers')
@@ -135,7 +105,6 @@ export function useCustomers() {
           email: updates.email,
         })
         .eq('id', id)
-        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -150,14 +119,11 @@ export function useCustomers() {
   };
 
   const deleteCustomer = async (id: string) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
     try {
       const { error } = await supabase
         .from('customers')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
       if (error) throw error;
 
