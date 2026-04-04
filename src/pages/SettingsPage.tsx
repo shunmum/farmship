@@ -14,8 +14,6 @@ import { Separator } from "@/components/ui/separator";
 import PublicFormSettings from "@/components/PublicFormSettings";
 import ProductManagement from "@/components/ProductManagement";
 import ShippingModeSettings from "@/components/ShippingModeSettings";
-import ZoneManagement from "@/components/ZoneManagement";
-import ZoneShippingRates from "@/components/ZoneShippingRates";
 import AreaShippingRatesTable from "@/components/AreaShippingRatesTable";
 import {
   Dialog,
@@ -77,8 +75,6 @@ const SettingsPage = () => {
             <TabsTrigger value="invoice-settings">請求書設定</TabsTrigger>
             <TabsTrigger value="products">商品マスター</TabsTrigger>
             <TabsTrigger value="shipping-mode">送料計算方式</TabsTrigger>
-            <TabsTrigger value="zones">ゾーン管理</TabsTrigger>
-            <TabsTrigger value="zone-rates">ゾーン別料金</TabsTrigger>
             <TabsTrigger value="shipping">配送料金</TabsTrigger>
             <TabsTrigger value="consolidation">荷合いルール</TabsTrigger>
             <TabsTrigger value="public-form">公開フォーム</TabsTrigger>
@@ -261,14 +257,6 @@ const SettingsPage = () => {
 
           <TabsContent value="shipping-mode" className="space-y-4">
             <ShippingModeSettings />
-          </TabsContent>
-
-          <TabsContent value="zones" className="space-y-4">
-            <ZoneManagement />
-          </TabsContent>
-
-          <TabsContent value="zone-rates" className="space-y-4">
-            <ZoneShippingRates />
           </TabsContent>
 
           <TabsContent value="shipping" className="space-y-4">
