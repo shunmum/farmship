@@ -1,4 +1,4 @@
-import { Home, Users, ShoppingCart, Settings, Tractor, FileText, LogOut, Clock, Menu, X } from "lucide-react";
+import { Home, Users, ShoppingCart, Settings, Tractor, FileText, LogOut, Menu, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +10,6 @@ const menuItems = [
   { title: "ダッシュボード", url: "/", icon: Home },
   { title: "顧客管理", url: "/customers", icon: Users },
   { title: "受注管理", url: "/orders", icon: ShoppingCart },
-  { title: "配送履歴", url: "/history", icon: Clock },
   { title: "請求書一括", url: "/invoices/batch", icon: FileText },
   { title: "設定", url: "/settings", icon: Settings },
 ];
