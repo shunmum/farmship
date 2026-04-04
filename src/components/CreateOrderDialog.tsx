@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2 } from "lucide-react";
 import { useMockData } from "@/contexts/MockDataContext";
-import type { Recipient } from "@/types";
+import type { Recipient, InvoiceType } from "@/types";
 import type { OrderCategory } from "@/data/mockData";
 
 interface OrderItem {
@@ -32,7 +32,7 @@ interface CreateOrderDialogProps {
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
   const { toast } = useToast();
-  const { customers, products, productVariants, addOrder } = useMockData();
+  const { customers, products, productVariants, addOrder, updateCustomer } = useMockData();
 
   const [step, setStep] = useState(1);
 
@@ -43,6 +43,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const [carrier, setCarrier] = useState<"yamato" | "sagawa" | "yupack">("yamato");
   const [isCool, setIsCool] = useState(false);
   const [orderCategory, setOrderCategory] = useState<OrderCategory>("なし");
+  const [invoiceType, setInvoiceType] = useState<InvoiceType | "">("");
 
   // ダイアログを開くたびにリセット
   useEffect(() => {
@@ -120,6 +121,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       orderCategory,
     });
 
+    // 請求書種別が変更されていれば顧客情報を更新
+    if (invoiceType && selectedCustomer.invoiceType !== invoiceType) {
+      updateCustomer(selectedCustomer.id, { invoiceType });
+    }
+
     toast({ title: "✅ 注文を登録しました", description: `注文番号: ${orderNumber}` });
     resetForm();
     onSuccess();
@@ -135,6 +141,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setCarrier("yamato");
     setIsCool(false);
     setOrderCategory("なし");
+    setInvoiceType("");
   };
 
   // ステップ1: 顧客選択
@@ -146,7 +153,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       </div>
       <div className="space-y-2">
         <Label>顧客（送り主）</Label>
-        <Select value={selectedCustomerId} onValueChange={(v) => { setSelectedCustomerId(v); setSelectedRecipientId(""); }}>
+        <Select value={selectedCustomerId} onValueChange={(v) => {
+          setSelectedCustomerId(v);
+          setSelectedRecipientId("");
+          const c = customers.find((c) => c.id === v);
+          setInvoiceType(c?.invoiceType || "");
+        }}>
           <SelectTrigger>
             <SelectValue placeholder="顧客を選択してください" />
           </SelectTrigger>
@@ -312,6 +324,21 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-2">
+          <Label>請求書種別</Label>
+          <Select value={invoiceType || "未設定"} onValueChange={(v) => setInvoiceType(v === "未設定" ? "" : v as InvoiceType)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="未設定">未設定</SelectItem>
+              <SelectItem value="箱に入れる">箱に入れる</SelectItem>
+              <SelectItem value="郵送する">郵送する</SelectItem>
+              <SelectItem value="メールで送る">メールで送る</SelectItem>
+            </SelectContent>
+          </Select>
+          {invoiceType && selectedCustomer?.invoiceType !== invoiceType && (
+            <p className="text-xs text-[#2d6a4f]">※ 確定時にこの顧客の請求書種別が更新されます</p>
+          )}
+        </div>
         <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
           <div className="flex justify-between"><span>商品合計</span><span className="font-semibold">¥{itemsTotal.toLocaleString()}</span></div>
           <div className="flex justify-between"><span>送料</span><span className="font-semibold">¥{shippingFee.toLocaleString()}</span></div>
@@ -360,6 +387,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           <p>配送日: {deliveryDate}</p>
           <p>配送業者: {carrierLabel}</p>
           <p>クール便: {isCool ? "あり" : "なし"}</p>
+          <p>種別: {orderCategory}</p>
+          <p>請求書種別: {invoiceType || "未設定"}</p>
         </div>
         <div className="bg-[#2d6a4f]/10 p-4 rounded-lg">
           <div className="flex justify-between font-bold text-lg">
