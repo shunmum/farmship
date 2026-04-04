@@ -2,19 +2,18 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Timeline, TimelineItem } from "@/components/Timeline";
-import { useSampleData } from "@/hooks/useSampleData";
-import { 
-  ArrowLeft, 
-  CheckCircle2, 
-  Clock, 
-  Package, 
-  XCircle, 
-  MoreVertical,
-  Plus,
+import { useOrders } from "@/hooks/useOrders";
+import { useMockData } from "@/contexts/MockDataContext";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Package,
   MapPin,
   Truck,
-  DollarSign
+  Banknote,
+  MoreVertical,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,22 +21,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 const OrderDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { orders, customers, products } = useSampleData();
-  
-  const order = orders.find(o => o.id === id);
-  const customer = customers.find(c => c.id === order?.customerId);
+  const { orders, updateOrder } = useOrders();
+  const { customers } = useMockData();
+  const { toast } = useToast();
 
-  if (!order || !customer) {
+  const order = orders.find((o) => o.id === id);
+  const customer = customers.find((c) => c.id === order?.customerId);
+
+  if (!order) {
     return (
       <div className="min-h-screen bg-background p-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-4xl">
           <Button variant="ghost" onClick={() => navigate("/orders")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            戻る
+            受注一覧へ戻る
           </Button>
           <div className="mt-8 text-center">
             <h2 className="text-2xl font-bold">注文が見つかりません</h2>
@@ -47,90 +49,86 @@ const OrderDetailPage = () => {
     );
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "未発送":
-        return <Clock className="h-4 w-4" />;
-      case "発送済み":
-        return <Package className="h-4 w-4" />;
-      case "配達完了":
-        return <CheckCircle2 className="h-4 w-4" />;
-      case "キャンセル":
-        return <XCircle className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
-
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; className: string }> = {
-      未発送: { variant: "outline", className: "border-yellow-500 text-yellow-700 bg-yellow-50" },
-      発送済み: { variant: "default", className: "bg-blue-500" },
-      配達完了: { variant: "secondary", className: "bg-green-100 text-green-700 border-green-200" },
-      キャンセル: { variant: "destructive", className: "" },
-    };
-    const { variant, className } = config[status] || { variant: "default", className: "" };
-    return (
-      <Badge variant={variant} className={className}>
-        <span className="flex items-center gap-1">
-          {getStatusIcon(status)}
-          {status}
-        </span>
-      </Badge>
-    );
+    switch (status) {
+      case "配送前":
+        return (
+          <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50 gap-1">
+            <Clock className="h-3 w-3" />配送前
+          </Badge>
+        );
+      case "配送済み":
+        return (
+          <Badge className="bg-green-100 text-green-700 border border-green-200 gap-1">
+            <CheckCircle2 className="h-3 w-3" />配送済み
+          </Badge>
+        );
+      case "キャンセル":
+        return (
+          <Badge variant="destructive" className="gap-1">
+            <XCircle className="h-3 w-3" />キャンセル
+          </Badge>
+        );
+      default:
+        return <Badge>{status}</Badge>;
+    }
   };
 
-  const subtotal = order.amount;
-  const shipping = 800;
-  const tax = Math.floor((subtotal + shipping) * 0.1);
-  const total = subtotal + shipping + tax;
+  const handleMarkShipped = async () => {
+    await updateOrder(order.id, { status: "配送済み" });
+    toast({ title: "✅ 配送済みに変更しました" });
+  };
 
-  // Mock history data
-  const historyItems = [
-    {
-      date: "2024年9月24日",
-      title: order.status === "配達完了" ? '注文が「配達完了」に変更されました' : order.status === "発送済み" ? '注文が「発送済み」に変更されました' : '注文が作成されました',
-      time: "15:16"
-    },
-    {
-      date: "2024年9月14日",
-      title: '支払い状況を「支払済み」に変更しました',
-      time: "15:16"
-    },
-    {
-      date: "2024年9月13日",
-      title: `${customer.name}さんに注文確認メールが送信されました`,
-      time: "10:04"
-    }
-  ];
+  const handleMarkPaid = async () => {
+    await updateOrder(order.id, { paymentStatus: "入金済み" });
+    toast({ title: "✅ 入金済みに変更しました" });
+  };
+
+  const handleCancel = async () => {
+    await updateOrder(order.id, { status: "キャンセル" });
+    toast({ title: "注文をキャンセルしました" });
+  };
+
+  // 送り先情報
+  const recipientInfo = customer?.recipients?.find((r) => r.id === order.recipientId);
 
   return (
-    <div className="min-h-screen bg-background p-8 fade-in">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/orders")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              戻る
+    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-5xl space-y-6">
+        {/* ヘッダー */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/orders")}>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                注文番号: {order.orderNumber}
-              </h1>
-              <p className="text-muted-foreground">注文日: {order.orderDate}</p>
+              <h1 className="text-xl sm:text-2xl font-bold">注文番号: {order.orderNumber}</h1>
+              <p className="text-sm text-gray-500">注文日: {order.orderDate}</p>
             </div>
             {getStatusBadge(order.status)}
           </div>
           <div className="flex gap-2">
-            <Button className="gap-2">
-              <CheckCircle2 className="h-4 w-4" />
-              支払済み
-            </Button>
-            <Button variant="outline" className="gap-2">
-              <Truck className="h-4 w-4" />
-              発送済み
-            </Button>
+            {order.paymentStatus === "未入金" && (
+              <Button
+                size="sm"
+                className="bg-[#2d6a4f] hover:bg-[#1b4332] gap-1"
+                onClick={handleMarkPaid}
+              >
+                <Banknote className="h-4 w-4" />
+                入金済みにする
+              </Button>
+            )}
+            {order.status === "配送前" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1"
+                onClick={handleMarkShipped}
+              >
+                <Truck className="h-4 w-4" />
+                配送済みにする
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -138,177 +136,146 @@ const OrderDetailPage = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>請求書を印刷</DropdownMenuItem>
-                <DropdownMenuItem>配送ラベルを印刷</DropdownMenuItem>
-                <DropdownMenuItem>メモを追加</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">注文をキャンセル</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCancel} className="text-destructive">
+                  注文をキャンセル
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Main Content (2/3 width) */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* メインコンテンツ */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Product Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>商品 ({order.products.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {order.products.map((item, idx) => {
-                  const product = products.find(p => p.id === item.productId);
-                  return (
-                    <div key={idx} className="flex items-center gap-4 rounded-lg border p-4">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-muted">
-                        <Package className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold">{item.productName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          サイズ: {product?.size}cm / 重さ: {product?.weight}kg
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">¥{product?.price.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground">× {item.quantity}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-
-            {/* Payment Information */}
+            {/* 商品情報 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  お支払い情報
+                  <Package className="h-5 w-5" />
+                  商品 ({order.products.length}件)
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">商品合計</span>
-                    <span className="font-medium">¥{subtotal.toLocaleString()}</span>
+              <CardContent className="space-y-3">
+                {order.products.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-4 rounded-lg border p-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#2d6a4f]/10">
+                      <Package className="h-7 w-7 text-[#2d6a4f]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold">{item.productName}</p>
+                      <p className="text-sm text-gray-500">数量: {item.quantity}</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">配送料</span>
-                    <span className="font-medium">¥{shipping.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">消費税 (10%)</span>
-                    <span className="font-medium">¥{tax.toLocaleString()}</span>
-                  </div>
-                  <div className="border-t pt-2" />
-                  <div className="flex justify-between">
-                    <span className="font-semibold">合計金額</span>
-                    <span className="text-xl font-bold text-primary">¥{total.toLocaleString()}</span>
-                  </div>
-                </div>
-                <Button className="w-full" variant="outline">
-                  顧客の支払い金額を確認
-                </Button>
+                ))}
               </CardContent>
             </Card>
 
-            {/* Order History */}
+            {/* 支払い情報 */}
             <Card>
               <CardHeader>
-                <CardTitle>受注履歴</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Banknote className="h-5 w-5" />
+                  お支払い情報
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <Timeline>
-                  {historyItems.map((item, idx) => (
-                    <TimelineItem
-                      key={idx}
-                      date={item.date}
-                      title={item.title}
-                      time={item.time}
-                    />
-                  ))}
-                </Timeline>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">商品合計</span>
+                    <span className="font-medium">¥{order.amount.toLocaleString()}</span>
+                  </div>
+                  <div className="border-t pt-3 flex justify-between">
+                    <span className="font-semibold">合計金額</span>
+                    <span className="text-xl font-bold text-[#2d6a4f]">¥{order.amount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-sm text-gray-500">入金ステータス</span>
+                    <Badge
+                      variant={order.paymentStatus === "入金済み" ? "default" : "outline"}
+                      className={order.paymentStatus === "入金済み" ? "bg-green-500" : "border-orange-500 text-orange-700 bg-orange-50"}
+                    >
+                      {order.paymentStatus}
+                    </Badge>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar (1/3 width) */}
+          {/* サイドバー */}
           <div className="space-y-6">
-            {/* Order Details */}
+            {/* 注文者情報 */}
             <Card>
               <CardHeader>
-                <CardTitle>注文内容</CardTitle>
+                <CardTitle>注文者（送り主）</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">連絡先情報</p>
-                  <p className="font-medium">{customer.name}</p>
-                  <p className="text-sm text-muted-foreground">{customer.email}</p>
-                  <p className="text-sm text-muted-foreground">{customer.phone}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">配送方法</p>
-                  <p className="font-medium">{order.shippingCompany || "通常配送"}</p>
-                  <p className="text-sm text-muted-foreground">3〜5営業日</p>
-                  {order.trackingNumber && (
-                    <p className="text-sm text-muted-foreground">追跡番号: {order.trackingNumber}</p>
-                  )}
-                </div>
+              <CardContent className="text-sm space-y-1">
+                {customer ? (
+                  <>
+                    <p className="font-semibold text-base">{customer.name}</p>
+                    <p className="text-gray-500">{customer.phone}</p>
+                    <p className="text-gray-500">{customer.email}</p>
+                  </>
+                ) : (
+                  <p className="text-gray-500">{order.customerName}</p>
+                )}
               </CardContent>
             </Card>
 
-            {/* Shipping Address */}
+            {/* 配送先 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  配送先住所
+                  配送先（送り先）
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="font-medium">{customer.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    〒{customer.postalCode}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {customer.address}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">{customer.phone}</p>
+              <CardContent className="text-sm space-y-1">
+                {recipientInfo ? (
+                  <>
+                    <p className="font-semibold text-base">
+                      {recipientInfo.name}
+                      {recipientInfo.relation && (
+                        <span className="text-xs font-normal text-gray-500 ml-1">（{recipientInfo.relation}）</span>
+                      )}
+                    </p>
+                    <p className="text-gray-500">〒{recipientInfo.postalCode}</p>
+                    <p className="text-gray-500">{recipientInfo.address}</p>
+                    <p className="text-gray-500">{recipientInfo.phone}</p>
+                  </>
+                ) : (
+                  <p className="text-gray-500">{order.recipientName || "配送先情報なし"}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 配送情報 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  配送情報
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">配送業者</span>
+                  <span className="font-medium">{order.shippingCompany || "未設定"}</span>
                 </div>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customer.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  <MapPin className="h-3 w-3" />
-                  地図を見る
-                </a>
-              </CardContent>
-            </Card>
-
-            {/* Billing Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle>請求先住所</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">配送先住所と同じ</p>
-              </CardContent>
-            </Card>
-
-            {/* Tags */}
-            <Card>
-              <CardHeader>
-                <CardTitle>タグ</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button variant="ghost" className="w-full justify-start gap-2 text-primary">
-                  <Plus className="h-4 w-4" />
-                  タグを割り当てる
-                </Button>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">配送予定日</span>
+                  <span className="font-medium">{order.deliveryDate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">配送ステータス</span>
+                  {getStatusBadge(order.status)}
+                </div>
+                {order.trackingNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">追跡番号</span>
+                    <span className="font-medium">{order.trackingNumber}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -1,65 +1,34 @@
-import { useState, useEffect } from 'react';
+// モック版: MockDataContextからデータを取得する
+import { useMockData } from "@/contexts/MockDataContext";
+import type { Order, OrderStatus, PaymentStatus } from "@/data/mockData";
 
-export interface Order {
-  id: string;
-  orderNumber: string;
-  orderDate: string;
-  customerId: string;
-  customerName: string;
-  products: { productId: string; productName: string; quantity: number }[];
-  amount: number;
-  deliveryDate: string;
-  status: '未発送' | '発送済み' | '配達完了' | 'キャンセル';
-  shippingCompany?: string;
-  trackingNumber?: string;
-}
+export type { Order, OrderStatus, PaymentStatus };
 
-// ordersテーブルがまだ存在しないため、ローカルステートで管理
 export function useOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { orders, addOrder, updateOrder, deleteOrder } = useMockData();
 
-  const fetchOrders = async () => {
-    // データベースにordersテーブルがないため、空配列を返す
-    setLoading(false);
+  const handleAddOrder = async (order: Omit<Order, "id">) => {
+    addOrder(order);
+    return { data: order, error: null };
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const addOrder = async (
-    order: Omit<Order, 'id'>,
-    _customerId: string
-  ) => {
-    const newOrder: Order = {
-      ...order,
-      id: crypto.randomUUID(),
-    };
-    setOrders((prev) => [newOrder, ...prev]);
-    return { data: newOrder, error: null };
-  };
-
-  const updateOrder = async (id: string, updates: Partial<Order>) => {
-    setOrders((prev) =>
-      prev.map((order) => (order.id === id ? { ...order, ...updates } : order))
-    );
+  const handleUpdateOrder = async (id: string, updates: Partial<Order>) => {
+    updateOrder(id, updates);
     return { data: updates, error: null };
   };
 
-  const deleteOrder = async (id: string) => {
-    setOrders((prev) => prev.filter((order) => order.id !== id));
+  const handleDeleteOrder = async (id: string) => {
+    deleteOrder(id);
     return { error: null };
   };
 
   return {
     orders,
-    loading,
-    error,
-    addOrder,
-    updateOrder,
-    deleteOrder,
-    refetch: fetchOrders,
+    loading: false,
+    error: null,
+    addOrder: handleAddOrder,
+    updateOrder: handleUpdateOrder,
+    deleteOrder: handleDeleteOrder,
+    refetch: () => {},
   };
 }

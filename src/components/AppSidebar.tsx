@@ -1,4 +1,4 @@
-import { Home, Users, ShoppingCart, Printer, Truck, Settings, Tractor, FileText, LogOut, BookOpen, List, Menu, X } from "lucide-react";
+import { Home, Users, ShoppingCart, Settings, Tractor, FileText, LogOut, Clock, Menu, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,12 +8,9 @@ import { useState, useEffect } from "react";
 
 const menuItems = [
   { title: "ダッシュボード", url: "/", icon: Home },
-  { title: "作業日誌", url: "/work-logs", icon: BookOpen },
-  { title: "日誌一覧", url: "/work-logs/list", icon: List },
   { title: "顧客管理", url: "/customers", icon: Users },
   { title: "受注管理", url: "/orders", icon: ShoppingCart },
-  { title: "送り状作成", url: "/shipping", icon: Printer },
-  { title: "配送履歴", url: "/history", icon: Truck },
+  { title: "配送履歴", url: "/history", icon: Clock },
   { title: "請求書一括", url: "/invoices/batch", icon: FileText },
   { title: "設定", url: "/settings", icon: Settings },
 ];
@@ -41,7 +38,7 @@ export function AppSidebar() {
         {/* ハンバーガーメニューボタン */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="fixed top-4 left-4 z-50 p-2 bg-gradient-to-br from-[#047857] to-[#065F46] text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
+          className="fixed top-4 right-4 z-50 p-2 bg-gradient-to-br from-[#047857] to-[#065F46] text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
           aria-label="メニュー"
         >
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

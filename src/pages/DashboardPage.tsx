@@ -1,271 +1,191 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useCustomers } from "@/hooks/useCustomers";
-import { useOrders } from "@/hooks/useOrders";
-import { TrendingUp, Users, Calendar, ArrowUp, ArrowDown, AlertCircle } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useOrders } from "@/hooks/useOrders";
+import { Plus, ShoppingBag, Banknote, AlertCircle, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { CreateOrderDialog } from "@/components/CreateOrderDialog";
 
 const DashboardPage = () => {
-  const { customers } = useCustomers();
   const { orders } = useOrders();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const today = new Date();
-  const thisMonthOrders = orders.filter(
-    (o) => new Date(o.orderDate).getMonth() === today.getMonth()
+  // 今シーズン = 2026年（現在の年）
+  const currentYear = new Date().getFullYear();
+  const seasonOrders = orders.filter(
+    (o) => new Date(o.orderDate).getFullYear() === currentYear
   );
 
-  const todayOrders = orders.filter(
-    (o) => new Date(o.orderDate).toDateString() === today.toDateString()
-  );
+  const totalSales = seasonOrders.reduce((sum, o) => sum + o.amount, 0);
+  const unpaidCount = seasonOrders.filter((o) => o.paymentStatus === "未入金").length;
+  const orderCount = seasonOrders.length;
 
-  const totalSales = thisMonthOrders.reduce((sum, o) => sum + o.amount, 0);
-  const todaySales = todayOrders.reduce((sum, o) => sum + o.amount, 0);
-  const unshippedCount = orders.filter((o) => o.status === "未発送").length;
-  const newCustomers = customers.filter(
-    (c) => new Date(c.lastPurchaseDate).getMonth() === today.getMonth()
-  ).length;
-
-  const monthlySales = [
-    { month: "8月", amount: 945000 },
-    { month: "9月", amount: 1120000 },
-    { month: "10月", amount: 1050000 },
-    { month: "11月", amount: 1280000 },
-    { month: "12月", amount: 1450000 },
-    { month: "1月", amount: totalSales },
-  ];
-
-  const topProducts = [
-    { name: "トマト", sales: 45 },
-    { name: "きゅうり", sales: 38 },
-    { name: "いちご", sales: 32 },
-    { name: "じゃがいも", sales: 28 },
-    { name: "玉ねぎ", sales: 25 },
-  ];
+  // 最新5件（orderDateの降順）
+  const latestOrders = [...orders]
+    .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
+    .slice(0, 5);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      未発送: "outline",
-      発送済み: "default",
-      配達完了: "secondary",
-      キャンセル: "destructive",
-    };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+    switch (status) {
+      case "配送前":
+        return (
+          <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50 gap-1">
+            <Clock className="h-3 w-3" />配送前
+          </Badge>
+        );
+      case "配送済み":
+        return (
+          <Badge className="bg-green-100 text-green-700 border border-green-200 gap-1">
+            <CheckCircle2 className="h-3 w-3" />配送済み
+          </Badge>
+        );
+      case "キャンセル":
+        return (
+          <Badge variant="destructive" className="gap-1">
+            <XCircle className="h-3 w-3" />キャンセル
+          </Badge>
+        );
+      default:
+        return <Badge>{status}</Badge>;
+    }
   };
 
-  const kpiCards = [
-    {
-      title: "今月の売上",
-      value: `¥${totalSales.toLocaleString()}`,
-      description: "+12%",
-      icon: TrendingUp,
-    },
-    {
-      title: "未発送",
-      value: `${unshippedCount}件`,
-      description: "要対応",
-      icon: AlertCircle,
-    },
-    {
-      title: "新規顧客",
-      value: `${newCustomers}名`,
-      description: "+8%",
-      icon: Users,
-    },
-    {
-      title: "今日の売上",
-      value: `¥${todaySales.toLocaleString()}`,
-      description: `${todayOrders.length}件`,
-      icon: Calendar,
-    },
-  ];
+  const getPaymentBadge = (paymentStatus: string) => {
+    const isPaid = paymentStatus === "入金済み";
+    return (
+      <Badge
+        variant={isPaid ? "default" : "outline"}
+        className={isPaid ? "bg-green-500" : "border-orange-500 text-orange-700 bg-orange-50"}
+      >
+        {paymentStatus}
+      </Badge>
+    );
+  };
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
-      <div className="mb-4 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">ダッシュボード</h1>
-        <p className="text-sm md:text-base text-gray-600">農作物販売管理システムの概要</p>
+    <div className="min-h-screen p-4 md:p-6 lg:p-8 space-y-6">
+      {/* ヘッダー */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">ダッシュボード</h1>
+          <p className="text-sm text-gray-500 mt-1">和田農園 受発注・配送管理</p>
+        </div>
+        <Button
+          size="lg"
+          className="w-full sm:w-auto bg-[#2d6a4f] hover:bg-[#1b4332] text-white shadow-lg gap-2 text-base px-6"
+          onClick={() => setShowCreateDialog(true)}
+        >
+          <Plus className="h-5 w-5" />
+          新規注文を入力する
+        </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {kpiCards.map((card, index) => (
-          <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600 mb-2">
-                    {card.title}
-                  </p>
-                  <div className="flex items-baseline gap-2">
-                    <h3 className="text-3xl font-bold text-gray-900">{card.value}</h3>
-                    {card.description.includes('+') ? (
-                      <span className="flex items-center text-sm font-medium text-green-600">
-                        <ArrowUp className="h-4 w-4 mr-1" />
-                        {card.description}
-                      </span>
-                    ) : card.description.includes('-') ? (
-                      <span className="flex items-center text-sm font-medium text-red-600">
-                        <ArrowDown className="h-4 w-4 mr-1" />
-                        {card.description}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-gray-600">{card.description}</span>
-                    )}
-                  </div>
-                </div>
-                <div className={`p-3 rounded-xl ${
-                  card.icon === TrendingUp ? 'bg-green-100' :
-                  card.icon === AlertCircle ? 'bg-yellow-100' :
-                  card.icon === Users ? 'bg-purple-100' :
-                  'bg-blue-100'
-                }`}>
-                  <card.icon className={`h-6 w-6 ${
-                    card.icon === TrendingUp ? 'text-green-600' :
-                    card.icon === AlertCircle ? 'text-yellow-600' :
-                    card.icon === Users ? 'text-purple-600' :
-                    'text-blue-600'
-                  }`} />
-                </div>
+      {/* KPIカード */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-[#2d6a4f]/10 to-[#2d6a4f]/5">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-600">今シーズン注文件数</p>
+              <div className="p-2 bg-[#2d6a4f]/10 rounded-lg">
+                <ShoppingBag className="h-5 w-5 text-[#2d6a4f]" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">月別売上推移</CardTitle>
-            <CardDescription>過去6ヶ月の売上実績</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={monthlySales}>
-                <defs>
-                  <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="amount" 
-                  stroke="#10b981" 
-                  strokeWidth={2}
-                  fill="url(#colorGreen)"
-                  animationDuration={1000}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            </div>
+            <p className="text-4xl font-bold text-gray-900">{orderCount}<span className="text-lg font-normal text-gray-500 ml-1">件</span></p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">人気商品TOP5</CardTitle>
-            <CardDescription>今月の販売実績</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {topProducts.map((product, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-900">{product.name}</span>
-                  <span className="text-gray-600 font-semibold">{product.sales}個</span>
-                </div>
-                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000 ease-out"
-                    style={{ 
-                      width: `${(product.sales / topProducts[0].sales) * 100}%`,
-                      animationDelay: `${index * 100}ms`
-                    }}
-                  />
-                </div>
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-50/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-600">売上合計</p>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Banknote className="h-5 w-5 text-blue-600" />
               </div>
-            ))}
+            </div>
+            <p className="text-4xl font-bold text-gray-900">
+              ¥{totalSales.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-50/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-600">未入金件数</p>
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-gray-900">{unpaidCount}<span className="text-lg font-normal text-gray-500 ml-1">件</span></p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Orders */}
+      {/* 最新注文5件 */}
       <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold">最近の配送</CardTitle>
-          <CardDescription>直近の配送状況</CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold">最新注文</CardTitle>
         </CardHeader>
-        <CardContent>
-          {/* Desktop Table View */}
+        <CardContent className="p-0">
+          {/* デスクトップ */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">配送日</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">顧客名</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">商品</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">金額</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">ステータス</th>
+                <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
+                  <th className="py-3 px-6 font-semibold">注文者名</th>
+                  <th className="py-3 px-6 font-semibold">商品</th>
+                  <th className="py-3 px-6 font-semibold">金額</th>
+                  <th className="py-3 px-6 font-semibold">入金</th>
+                  <th className="py-3 px-6 font-semibold">配送</th>
+                  <th className="py-3 px-6 font-semibold">注文日</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.slice(0, 8).map((order, index) => (
-                  <tr
-                    key={order.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <td className="py-4 px-4 text-sm text-gray-900">{order.deliveryDate}</td>
-                    <td className="py-4 px-4 text-sm font-medium text-gray-900">{order.customerName}</td>
-                    <td className="py-4 px-4 text-sm text-gray-600">
-                      {order.products.map((p) => p.productName).join(", ")}
+                {latestOrders.map((order) => (
+                  <tr key={order.id} className="border-b hover:bg-gray-50 transition-colors">
+                    <td className="py-4 px-6 font-medium text-gray-900">{order.customerName}</td>
+                    <td className="py-4 px-6 text-sm text-gray-600">
+                      {order.products.map((p) => `${p.productName}×${p.quantity}`).join(", ")}
                     </td>
-                    <td className="py-4 px-4 text-sm font-semibold text-gray-900">¥{order.amount.toLocaleString()}</td>
-                    <td className="py-4 px-4">{getStatusBadge(order.status)}</td>
+                    <td className="py-4 px-6 font-semibold text-[#2d6a4f]">¥{order.amount.toLocaleString()}</td>
+                    <td className="py-4 px-6">{getPaymentBadge(order.paymentStatus)}</td>
+                    <td className="py-4 px-6">{getStatusBadge(order.status)}</td>
+                    <td className="py-4 px-6 text-sm text-gray-500">{order.orderDate}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
-            {orders.slice(0, 8).map((order, index) => (
-              <Card
-                key={order.id}
-                className="p-4 shadow-sm hover:shadow-md transition-shadow"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold text-gray-900">{order.customerName}</div>
-                      <div className="text-xs text-gray-500 mt-1">{order.deliveryDate}</div>
-                    </div>
-                    {getStatusBadge(order.status)}
+          {/* モバイル */}
+          <div className="md:hidden space-y-3 p-4">
+            {latestOrders.map((order) => (
+              <div key={order.id} className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">{order.customerName}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{order.orderDate}</p>
                   </div>
-                  <div className="text-sm text-gray-600 line-clamp-1">
-                    {order.products.map((p) => p.productName).join(", ")}
-                  </div>
-                  <div className="text-lg font-bold text-gray-900 pt-1">
-                    ¥{order.amount.toLocaleString()}
-                  </div>
+                  <p className="font-bold text-[#2d6a4f]">¥{order.amount.toLocaleString()}</p>
                 </div>
-              </Card>
+                <p className="text-sm text-gray-600">
+                  {order.products.map((p) => `${p.productName}×${p.quantity}`).join(", ")}
+                </p>
+                <div className="flex gap-2">
+                  {getPaymentBadge(order.paymentStatus)}
+                  {getStatusBadge(order.status)}
+                </div>
+              </div>
             ))}
           </div>
         </CardContent>
       </Card>
+
+      <CreateOrderDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={() => {}}
+      />
     </div>
   );
 };

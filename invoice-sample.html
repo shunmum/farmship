@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>請求書</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, "Yu Gothic", "メイリオ", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+    .invoice-wrapper {
+      max-width: 800px;
+      margin: 24px auto;
+      background: #ffffff;
+      padding: 32px 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    }
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 32px;
+    }
+    .brand-block {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2933;
+    }
+    .brand-block span {
+      display: block;
+      font-size: 12px;
+      font-weight: 400;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .invoice-title {
+      text-align: right;
+    }
+    .invoice-title h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.2em;
+    }
+    .invoice-title p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .info-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      font-size: 13px;
+    }
+    .info-block {
+      flex: 1;
+    }
+    .info-block h2 {
+      font-size: 13px;
+      margin: 0 0 6px;
+      color: #374151;
+    }
+    .info-block p {
+      margin: 2px 0;
+      color: #4b5563;
+    }
+
+    .summary-block {
+      text-align: right;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+      margin: 4px 0;
+    }
+    .summary-row label {
+      color: #6b7280;
+      min-width: 80px;
+      text-align: right;
+    }
+    .summary-row span {
+      font-weight: 600;
+      min-width: 120px;
+      text-align: right;
+    }
+    .summary-row.total {
+      font-size: 16px;
+      margin-top: 8px;
+    }
+    .summary-row.total span {
+      color: #111827;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    thead {
+      background: #f9fafb;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-weight: 600;
+      color: #4b5563;
+      font-size: 12px;
+    }
+    td {
+      color: #111827;
+    }
+    td.num {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 12px;
+      line-height: 1.7;
+    }
+
+    .footer {
+      margin-top: 32px;
+      font-size: 11px;
+      color: #6b7280;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .invoice-wrapper {
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-wrapper">
+    <!-- ヘッダー -->
+    <div class="invoice-header">
+      <div class="brand-block">
+        FarmShip デモ農園
+        <span>〒999-9999 山形県〇〇市〇〇町1-2-3</span>
+        <span>TEL: 090-1234-5678 / MAIL: info@example.com</span>
+      </div>
+      <div class="invoice-title">
+        <h1>請 求 書</h1>
+        <p>発行日：2026年3月18日<br />請求書番号：INV-20260318-001</p>
+      </div>
+    </div>
+
+    <!-- 請求先・自社情報 -->
+    <div class="section info-grid">
+      <div class="info-block">
+        <h2>ご請求先</h2>
+        <p>〒150-0001</p>
+        <p>東京都渋谷区神宮前1-1-1</p>
+        <p>田中 義雄 様</p>
+        <p>TEL: 090-0000-0000</p>
+      </div>
+      <div class="info-block">
+        <h2>振込先</h2>
+        <p>〇〇銀行 △△支店</p>
+        <p>普通 1234567</p>
+        <p>口座名義：ファームシップデモノウエン</p>
+        <p>お支払期日：2026年3月31日</p>
+      </div>
+    </div>
+
+    <!-- 金額サマリ -->
+    <div class="section summary-block">
+      <div class="summary-row">
+        <label>小計</label><span>¥ 28,000</span>
+      </div>
+      <div class="summary-row">
+        <label>送料</label><span>¥ 1,000</span>
+      </div>
+      <div class="summary-row">
+        <label>消費税</label><span>¥ 2,900</span>
+      </div>
+      <div class="summary-row total">
+        <label>合計請求額</label><span>¥ 31,900</span>
+      </div>
+    </div>
+
+    <!-- 明細 -->
+    <div class="section">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 40%">品目</th>
+            <th style="width: 15%">数量</th>
+            <th style="width: 20%">単価 (税込)</th>
+            <th style="width: 25%">金額 (税込)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>桃 3kg 箱</td>
+            <td class="num">2 箱</td>
+            <td class="num">¥ 5,000</td>
+            <td class="num">¥ 10,000</td>
+          </tr>
+          <tr>
+            <td>ぶどう 2房 箱</td>
+            <td class="num">3 箱</td>
+            <td class="num">¥ 6,000</td>
+            <td class="num">¥ 18,000</td>
+          </tr>
+          <tr>
+            <td>送料（ヤマト運輸 80サイズ・クール便）</td>
+            <td class="num">1 式</td>
+            <td class="num">¥ 1,000</td>
+            <td class="num">¥ 1,000</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">
+        上記の通りご請求申し上げます。<br />
+        お手数ですが、期日までに上記口座へお振込みをお願いいたします。
+      </p>
+    </div>
+
+    <!-- フッター -->
+    <div class="footer">
+      <div>備考：入金確認後に発送となります。</div>
+      <div>FarmShip デモ農園 / 担当：山田</div>
+    </div>
+  </div>
+</body>
+</html>
