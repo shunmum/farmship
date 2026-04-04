@@ -17,8 +17,24 @@ import Papa from "papaparse";
 import { useToast } from "@/hooks/use-toast";
 import { CreateOrderDialog } from "@/components/CreateOrderDialog";
 import type { OrderCategory } from "@/data/mockData";
+import type { InvoiceType } from "@/types";
 
 const ORDER_CATEGORIES: OrderCategory[] = ["のし", "お中元", "お供え", "なし"];
+
+const getInvoiceBadge = (invoiceType?: InvoiceType) => {
+  if (!invoiceType) return null;
+  const config: Record<InvoiceType, { label: string; className: string }> = {
+    "箱に入れる": { label: "箱", className: "bg-amber-100 text-amber-700 border-amber-200" },
+    "郵送する": { label: "郵送", className: "bg-blue-100 text-blue-700 border-blue-200" },
+    "メールで送る": { label: "メール", className: "bg-green-100 text-green-700 border-green-200" },
+  };
+  const { label, className } = config[invoiceType];
+  return (
+    <Badge variant="outline" className={className} title={invoiceType}>
+      {label}
+    </Badge>
+  );
+};
 
 const getCategoryBadge = (category?: OrderCategory) => {
   if (!category || category === "なし") return null;
@@ -55,6 +71,12 @@ const OrdersPage = () => {
         });
       });
     });
+    return map;
+  }, [customers]);
+
+  const customerMap = useMemo(() => {
+    const map = new Map<string, typeof customers[0]>();
+    customers.forEach((c) => map.set(c.id, c));
     return map;
   }, [customers]);
 
@@ -296,6 +318,7 @@ const OrdersPage = () => {
                     <th className="pb-3 font-medium">金額</th>
                     <th className="pb-3 font-medium">配送予定日</th>
                     <th className="pb-3 font-medium">種別</th>
+                    <th className="pb-3 font-medium">請求書</th>
                     <th className="pb-3 font-medium">配送ステータス</th>
                     <th className="pb-3 font-medium">入金ステータス</th>
                     <th className="pb-3 font-medium">アクション</th>
@@ -340,6 +363,9 @@ const OrdersPage = () => {
                           </SelectContent>
                         </Select>
                       </td>
+                      <td className="py-4">
+                        {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
+                      </td>
                       <td className="py-4">{getStatusBadge(order.status)}</td>
                       <td className="py-4">{getPaymentBadge(order.paymentStatus)}</td>
                       <td className="py-4">
@@ -370,9 +396,10 @@ const OrdersPage = () => {
                   <div className="space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-xs font-bold text-muted-foreground">No.{orderNumberMap.get(order.id)}</span>
                           {order.orderCategory && order.orderCategory !== "なし" && getCategoryBadge(order.orderCategory)}
+                          {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
                         </div>
                         <div className="font-semibold text-base text-gray-900 mb-1.5">{order.customerName}</div>
                         <div className="text-sm text-gray-500 space-y-0.5">

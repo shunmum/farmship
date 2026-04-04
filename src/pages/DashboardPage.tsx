@@ -1,14 +1,98 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrders } from "@/hooks/useOrders";
+import { useMockData } from "@/contexts/MockDataContext";
 import { Plus, ShoppingBag, Banknote, AlertCircle, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { CreateOrderDialog } from "@/components/CreateOrderDialog";
+import type { OrderCategory } from "@/data/mockData";
+import type { InvoiceType } from "@/types";
+
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case "配送前":
+      return (
+        <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50 gap-1">
+          <Clock className="h-3 w-3" />配送前
+        </Badge>
+      );
+    case "配送済み":
+      return (
+        <Badge className="bg-green-100 text-green-700 border border-green-200 gap-1">
+          <CheckCircle2 className="h-3 w-3" />配送済み
+        </Badge>
+      );
+    case "キャンセル":
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <XCircle className="h-3 w-3" />キャンセル
+        </Badge>
+      );
+    default:
+      return <Badge>{status}</Badge>;
+  }
+};
+
+const getPaymentBadge = (paymentStatus: string) => {
+  const isPaid = paymentStatus === "入金済み";
+  return (
+    <Badge
+      variant={isPaid ? "default" : "outline"}
+      className={isPaid ? "bg-green-500" : "border-orange-500 text-orange-700 bg-orange-50"}
+    >
+      {paymentStatus}
+    </Badge>
+  );
+};
+
+const getCategoryBadge = (category?: OrderCategory) => {
+  if (!category || category === "なし") return null;
+  const config: Record<string, string> = {
+    のし: "bg-blue-100 text-blue-700 border-blue-200",
+    お中元: "bg-orange-100 text-orange-700 border-orange-200",
+    お供え: "bg-purple-100 text-purple-700 border-purple-200",
+  };
+  return (
+    <Badge variant="outline" className={config[category] || ""}>
+      {category}
+    </Badge>
+  );
+};
+
+const getInvoiceBadge = (invoiceType?: InvoiceType) => {
+  if (!invoiceType) return null;
+  const config: Record<InvoiceType, { label: string; className: string }> = {
+    "箱に入れる": { label: "箱", className: "bg-amber-100 text-amber-700 border-amber-200" },
+    "郵送する": { label: "郵送", className: "bg-blue-100 text-blue-700 border-blue-200" },
+    "メールで送る": { label: "メール", className: "bg-green-100 text-green-700 border-green-200" },
+  };
+  const { label, className } = config[invoiceType];
+  return (
+    <Badge variant="outline" className={className} title={invoiceType}>
+      {label}
+    </Badge>
+  );
+};
 
 const DashboardPage = () => {
   const { orders } = useOrders();
+  const { customers } = useMockData();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const customerMap = useMemo(() => {
+    const map = new Map<string, typeof customers[0]>();
+    customers.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [customers]);
+
+  // 受注日順の連番マップ（受注一覧と共通）
+  const orderNumberMap = useMemo(() => {
+    const sorted = [...orders].sort((a, b) => a.orderDate.localeCompare(b.orderDate));
+    const map = new Map<string, number>();
+    sorted.forEach((o, i) => map.set(o.id, i + 1));
+    return map;
+  }, [orders]);
 
   // 今シーズン = 2026年（現在の年）
   const currentYear = new Date().getFullYear();
@@ -25,50 +109,13 @@ const DashboardPage = () => {
     .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
     .slice(0, 5);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "配送前":
-        return (
-          <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50 gap-1">
-            <Clock className="h-3 w-3" />配送前
-          </Badge>
-        );
-      case "配送済み":
-        return (
-          <Badge className="bg-green-100 text-green-700 border border-green-200 gap-1">
-            <CheckCircle2 className="h-3 w-3" />配送済み
-          </Badge>
-        );
-      case "キャンセル":
-        return (
-          <Badge variant="destructive" className="gap-1">
-            <XCircle className="h-3 w-3" />キャンセル
-          </Badge>
-        );
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-
-  const getPaymentBadge = (paymentStatus: string) => {
-    const isPaid = paymentStatus === "入金済み";
-    return (
-      <Badge
-        variant={isPaid ? "default" : "outline"}
-        className={isPaid ? "bg-green-500" : "border-orange-500 text-orange-700 bg-orange-50"}
-      >
-        {paymentStatus}
-      </Badge>
-    );
-  };
-
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8 space-y-6">
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">ダッシュボード</h1>
-          <p className="text-sm text-gray-500 mt-1">和田農園 受発注・配送管理</p>
+          <p className="text-sm text-gray-500 mt-1">{import.meta.env.VITE_FARM_NAME} 受発注・配送管理</p>
         </div>
         <Button
           size="lg"
@@ -132,25 +179,37 @@ const DashboardPage = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-                  <th className="py-3 px-6 font-semibold">注文者名</th>
-                  <th className="py-3 px-6 font-semibold">商品</th>
-                  <th className="py-3 px-6 font-semibold">金額</th>
-                  <th className="py-3 px-6 font-semibold">入金</th>
-                  <th className="py-3 px-6 font-semibold">配送</th>
-                  <th className="py-3 px-6 font-semibold">注文日</th>
+                  <th className="py-3 px-4 font-semibold w-12">No.</th>
+                  <th className="py-3 px-4 font-semibold">注文者名</th>
+                  <th className="py-3 px-4 font-semibold">商品</th>
+                  <th className="py-3 px-4 font-semibold">金額</th>
+                  <th className="py-3 px-4 font-semibold">種別</th>
+                  <th className="py-3 px-4 font-semibold">請求書</th>
+                  <th className="py-3 px-4 font-semibold">入金</th>
+                  <th className="py-3 px-4 font-semibold">配送</th>
+                  <th className="py-3 px-4 font-semibold">注文日</th>
                 </tr>
               </thead>
               <tbody>
                 {latestOrders.map((order) => (
                   <tr key={order.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-6 font-medium text-gray-900">{order.customerName}</td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
+                    <td className="py-4 px-4 font-bold text-gray-400 text-sm">
+                      No.{orderNumberMap.get(order.id)}
+                    </td>
+                    <td className="py-4 px-4 font-medium text-gray-900">{order.customerName}</td>
+                    <td className="py-4 px-4 text-sm text-gray-600">
                       {order.products.map((p) => `${p.productName}×${p.quantity}`).join(", ")}
                     </td>
-                    <td className="py-4 px-6 font-semibold text-[#2d6a4f]">¥{order.amount.toLocaleString()}</td>
-                    <td className="py-4 px-6">{getPaymentBadge(order.paymentStatus)}</td>
-                    <td className="py-4 px-6">{getStatusBadge(order.status)}</td>
-                    <td className="py-4 px-6 text-sm text-gray-500">{order.orderDate}</td>
+                    <td className="py-4 px-4 font-semibold text-[#2d6a4f]">¥{order.amount.toLocaleString()}</td>
+                    <td className="py-4 px-4">
+                      {getCategoryBadge(order.orderCategory)}
+                    </td>
+                    <td className="py-4 px-4">
+                      {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
+                    </td>
+                    <td className="py-4 px-4">{getPaymentBadge(order.paymentStatus)}</td>
+                    <td className="py-4 px-4">{getStatusBadge(order.status)}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">{order.orderDate}</td>
                   </tr>
                 ))}
               </tbody>
@@ -163,6 +222,11 @@ const DashboardPage = () => {
               <div key={order.id} className="bg-gray-50 rounded-lg p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <span className="text-xs font-bold text-gray-400">No.{orderNumberMap.get(order.id)}</span>
+                      {getCategoryBadge(order.orderCategory)}
+                      {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
+                    </div>
                     <p className="font-semibold text-gray-900">{order.customerName}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{order.orderDate}</p>
                   </div>
@@ -171,7 +235,7 @@ const DashboardPage = () => {
                 <p className="text-sm text-gray-600">
                   {order.products.map((p) => `${p.productName}×${p.quantity}`).join(", ")}
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {getPaymentBadge(order.paymentStatus)}
                   {getStatusBadge(order.status)}
                 </div>
