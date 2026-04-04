@@ -16,6 +16,7 @@ import ProductManagement from "@/components/ProductManagement";
 import ShippingModeSettings from "@/components/ShippingModeSettings";
 import ZoneManagement from "@/components/ZoneManagement";
 import ZoneShippingRates from "@/components/ZoneShippingRates";
+import AreaShippingRatesTable from "@/components/AreaShippingRatesTable";
 import {
   Dialog,
   DialogContent,
@@ -271,60 +272,7 @@ const SettingsPage = () => {
           </TabsContent>
 
           <TabsContent value="shipping" className="space-y-4">
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Truck className="h-5 w-5" />
-                  配送料金設定
-                </CardTitle>
-                <CardDescription className="text-sm">配送業者別・サイズ別の料金設定（クール便料金を含む）</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 p-4 sm:p-6">
-                {Object.entries(groupedShippingRates).map(([carrier, rates]) => (
-                  <div key={carrier} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">{carrierNames[carrier as ShippingCarrier]}</h3>
-                    </div>
-                    <div className="border rounded-lg overflow-hidden">
-                      <table className="w-full">
-                        <thead className="bg-muted/50">
-                          <tr className="text-left text-sm">
-                            <th className="p-3 font-medium">サイズ</th>
-                            <th className="p-3 font-medium">基本料金</th>
-                            <th className="p-3 font-medium">クール便追加料金</th>
-                            <th className="p-3 font-medium">合計（クール便）</th>
-                            <th className="p-3 font-medium">アクション</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rates
-                            .sort((a, b) => parseInt(a.size) - parseInt(b.size))
-                            .map((rate) => (
-                              <tr key={rate.id} className="border-t text-sm hover:bg-muted/30">
-                                <td className="p-3 font-medium">{rate.size}サイズ</td>
-                                <td className="p-3">¥{rate.basePrice.toLocaleString()}</td>
-                                <td className="p-3">¥{rate.coolPrice.toLocaleString()}</td>
-                                <td className="p-3 font-semibold text-primary">
-                                  ¥{(rate.basePrice + rate.coolPrice).toLocaleString()}
-                                </td>
-                                <td className="p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditingShippingRate(rate)}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <AreaShippingRatesTable />
           </TabsContent>
 
           <TabsContent value="consolidation" className="space-y-4">

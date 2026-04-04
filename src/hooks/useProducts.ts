@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import { MOCK_PRODUCTS, MOCK_PRODUCT_VARIANTS } from '@/data/mockData';
 
 export interface ProductVariant {
   id: string;
@@ -44,21 +45,41 @@ export function useProducts() {
 
       if (productsError) throw productsError;
 
-      setProducts(
-        (productsData || []).map((p: ProductRow) => ({
+      if (productsData && productsData.length > 0) {
+        setProducts(
+          productsData.map((p: ProductRow) => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            description: undefined,
+            isParent: false,
+            price: p.price ? Number(p.price) : undefined,
+            size: p.size_cm ? String(p.size_cm) : undefined,
+            weight: p.weight_kg ? Number(p.weight_kg) : undefined,
+          }))
+        );
+        setProductVariants([]);
+      } else {
+        // Supabaseにデータがない場合はモックデータを使用
+        setProducts(MOCK_PRODUCTS.map(p => ({
           id: p.id,
           name: p.name,
           category: p.category,
-          description: undefined,
-          isParent: false,
-          price: p.price ? Number(p.price) : undefined,
-          size: p.size_cm ? String(p.size_cm) : undefined,
-          weight: p.weight_kg ? Number(p.weight_kg) : undefined,
-        }))
-      );
-
-      // product_variantsテーブルがないため空配列
-      setProductVariants([]);
+          description: p.description,
+          isParent: p.isParent,
+          price: p.price,
+          size: p.size,
+          weight: p.weight,
+        })));
+        setProductVariants(MOCK_PRODUCT_VARIANTS.map(v => ({
+          id: v.id,
+          parentProductId: v.parentProductId,
+          name: v.name,
+          price: v.price,
+          size: v.size,
+          weight: v.weight / 1000, // g→kg変換
+        })));
+      }
     } catch (err) {
       console.error('Error fetching products:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch products');
