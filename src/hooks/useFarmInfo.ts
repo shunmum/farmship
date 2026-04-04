@@ -15,6 +15,7 @@ export interface FarmInfo {
   taxRate: number;
   invoiceNote: string;
   invoicePrefix: string;
+  invoiceRegistrationNumber: string;
 }
 
 const DEFAULT_FARM_INFO: FarmInfo = {
@@ -32,6 +33,7 @@ const DEFAULT_FARM_INFO: FarmInfo = {
   taxRate: 10,
   invoiceNote: "上記の通りご請求申し上げます。\nお手数ですが、期日までに上記口座へお振込みをお願いいたします。",
   invoicePrefix: "INV",
+  invoiceRegistrationNumber: "",
 };
 
 const STORAGE_KEY = "farmInfo";

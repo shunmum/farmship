@@ -230,6 +230,15 @@ const SettingsPage = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label>インボイス登録番号（適格請求書発行事業者）</Label>
+                  <Input
+                    value={farmForm.invoiceRegistrationNumber}
+                    onChange={(e) => setFarmForm({ ...farmForm, invoiceRegistrationNumber: e.target.value })}
+                    placeholder="例: T1234567890123"
+                  />
+                  <p className="text-xs text-muted-foreground">登録番号を入力すると請求書・領収書に「適格請求書」として記載されます</p>
+                </div>
+                <div className="space-y-2">
                   <Label>請求書備考（定型文）</Label>
                   <Textarea
                     value={farmForm.invoiceNote}

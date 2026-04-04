@@ -119,6 +119,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       paymentStatus: "未入金",
       shippingCompany: carrierLabel,
       orderCategory,
+      isCoolDelivery: isCool,
     });
 
     // 請求書種別が変更されていれば顧客情報を更新

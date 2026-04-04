@@ -27,18 +27,100 @@ export interface Order {
   trackingNumber?: string;
   note?: string;
   orderCategory?: OrderCategory;
+  isCoolDelivery?: boolean;
 }
 
 export const MOCK_PRODUCTS: Product[] = [
-  { id: "P001", name: "桃", category: "果物", isParent: true },
-  { id: "P002", name: "ぶどう", category: "果物", isParent: true },
+  // ぶどう（単品）
+  { id: "P001", name: "シャインマスカット", category: "ぶどう", isParent: true },
+  { id: "P002", name: "ナガノパープル", category: "ぶどう", isParent: true },
+  { id: "P003", name: "スカーレット", category: "ぶどう", isParent: true },
+  { id: "P004", name: "サンシャインレッド", category: "ぶどう", isParent: true },
+  { id: "P005", name: "ピオーネ", category: "ぶどう", isParent: true },
+  { id: "P006", name: "巨峰", category: "ぶどう", isParent: true },
+  // ぶどう（セット）
+  { id: "P007", name: "スカーレット＆ピオーネ＆シャインマスカット 豪華三色セット", category: "セット", isParent: true },
+  { id: "P008", name: "ピオーネ＆シャインマスカット 食べ比べセット", category: "セット", isParent: true },
+  { id: "P009", name: "巨峰＆シャインマスカット 食べ比べセット", category: "セット", isParent: true },
+  // 桃
+  { id: "P010", name: "白桃", category: "桃", isParent: true },
+  { id: "P011", name: "白鳳", category: "桃", isParent: true },
+  { id: "P012", name: "さくら（白桃系）", category: "桃", isParent: true },
+  { id: "P013", name: "なつっこ（白桃系）", category: "桃", isParent: true },
+  { id: "P014", name: "おどろき（白桃系）", category: "桃", isParent: true },
 ];
 
 export const MOCK_PRODUCT_VARIANTS: ProductVariant[] = [
-  { id: "PV001", parentProductId: "P001", product_id: "P001", name: "桃 2kg", price: 3500, size: "60", weight: 2000 },
-  { id: "PV002", parentProductId: "P001", product_id: "P001", name: "桃 3kg", price: 5000, size: "80", weight: 3000 },
-  { id: "PV003", parentProductId: "P002", product_id: "P002", name: "ぶどう 1房", price: 2500, size: "60", weight: 500 },
-  { id: "PV004", parentProductId: "P002", product_id: "P002", name: "ぶどう 2房", price: 4500, size: "80", weight: 1000 },
+  // シャインマスカット
+  { id: "PV001", parentProductId: "P001", product_id: "P001", name: "シャインマスカット 2kg（3〜4房）", price: 4800, size: "60", weight: 2000 },
+  { id: "PV002", parentProductId: "P001", product_id: "P001", name: "シャインマスカット 3kg（5〜6房）", price: 7200, size: "80", weight: 3000 },
+  { id: "PV003", parentProductId: "P001", product_id: "P001", name: "シャインマスカット 4kg（7〜8房）", price: 9600, size: "80", weight: 4000 },
+  { id: "PV004", parentProductId: "P001", product_id: "P001", name: "シャインマスカット 5kg（9〜10房）", price: 12000, size: "100", weight: 5000 },
+  // ナガノパープル
+  { id: "PV005", parentProductId: "P002", product_id: "P002", name: "ナガノパープル 2kg（3〜4房）", price: 4800, size: "60", weight: 2000 },
+  { id: "PV006", parentProductId: "P002", product_id: "P002", name: "ナガノパープル 3kg（5〜6房）", price: 7200, size: "80", weight: 3000 },
+  { id: "PV007", parentProductId: "P002", product_id: "P002", name: "ナガノパープル 4kg（7〜8房）", price: 9600, size: "80", weight: 4000 },
+  { id: "PV008", parentProductId: "P002", product_id: "P002", name: "ナガノパープル 5kg（9〜10房）", price: 12000, size: "100", weight: 5000 },
+  // スカーレット
+  { id: "PV009", parentProductId: "P003", product_id: "P003", name: "スカーレット 2kg（3〜4房）", price: 4800, size: "60", weight: 2000 },
+  { id: "PV010", parentProductId: "P003", product_id: "P003", name: "スカーレット 3kg（5〜6房）", price: 7200, size: "80", weight: 3000 },
+  { id: "PV011", parentProductId: "P003", product_id: "P003", name: "スカーレット 4kg（7〜8房）", price: 9600, size: "80", weight: 4000 },
+  { id: "PV012", parentProductId: "P003", product_id: "P003", name: "スカーレット 5kg（9〜10房）", price: 12000, size: "100", weight: 5000 },
+  // サンシャインレッド
+  { id: "PV013", parentProductId: "P004", product_id: "P004", name: "サンシャインレッド 2kg（3〜4房）", price: 6000, size: "60", weight: 2000 },
+  { id: "PV014", parentProductId: "P004", product_id: "P004", name: "サンシャインレッド 3kg（5〜6房）", price: 9000, size: "80", weight: 3000 },
+  { id: "PV015", parentProductId: "P004", product_id: "P004", name: "サンシャインレッド 4kg（7〜8房）", price: 12000, size: "80", weight: 4000 },
+  { id: "PV016", parentProductId: "P004", product_id: "P004", name: "サンシャインレッド 5kg（9〜10房）", price: 15000, size: "100", weight: 5000 },
+  // ピオーネ
+  { id: "PV017", parentProductId: "P005", product_id: "P005", name: "ピオーネ 2kg（3〜4房）", price: 3600, size: "60", weight: 2000 },
+  { id: "PV018", parentProductId: "P005", product_id: "P005", name: "ピオーネ 3kg（5〜6房）", price: 5400, size: "80", weight: 3000 },
+  { id: "PV019", parentProductId: "P005", product_id: "P005", name: "ピオーネ 4kg（7〜8房）", price: 7200, size: "80", weight: 4000 },
+  { id: "PV020", parentProductId: "P005", product_id: "P005", name: "ピオーネ 5kg（9〜10房）", price: 9000, size: "100", weight: 5000 },
+  // 巨峰
+  { id: "PV021", parentProductId: "P006", product_id: "P006", name: "巨峰 2kg（3〜4房）", price: 3600, size: "60", weight: 2000 },
+  { id: "PV022", parentProductId: "P006", product_id: "P006", name: "巨峰 3kg（5〜6房）", price: 5400, size: "80", weight: 3000 },
+  { id: "PV023", parentProductId: "P006", product_id: "P006", name: "巨峰 4kg（7〜8房）", price: 7200, size: "80", weight: 4000 },
+  { id: "PV024", parentProductId: "P006", product_id: "P006", name: "巨峰 5kg（9〜10房）", price: 9000, size: "100", weight: 5000 },
+  // 三色セット
+  { id: "PV025", parentProductId: "P007", product_id: "P007", name: "三色セット 2kg（3〜4房）", price: 6000, size: "60", weight: 2000 },
+  { id: "PV026", parentProductId: "P007", product_id: "P007", name: "三色セット 3kg（5〜6房）", price: 9000, size: "80", weight: 3000 },
+  { id: "PV027", parentProductId: "P007", product_id: "P007", name: "三色セット 4kg（7〜8房）", price: 12000, size: "80", weight: 4000 },
+  { id: "PV028", parentProductId: "P007", product_id: "P007", name: "三色セット 5kg（9〜10房）", price: 15000, size: "100", weight: 5000 },
+  // ピオーネ＆シャインマスカット食べ比べセット
+  { id: "PV029", parentProductId: "P008", product_id: "P008", name: "ピオーネ＆シャインマスカット 2kg（3〜4房）", price: 4200, size: "60", weight: 2000 },
+  { id: "PV030", parentProductId: "P008", product_id: "P008", name: "ピオーネ＆シャインマスカット 3kg（5〜6房）", price: 6300, size: "80", weight: 3000 },
+  { id: "PV031", parentProductId: "P008", product_id: "P008", name: "ピオーネ＆シャインマスカット 4kg（7〜8房）", price: 8400, size: "80", weight: 4000 },
+  { id: "PV032", parentProductId: "P008", product_id: "P008", name: "ピオーネ＆シャインマスカット 5kg（9〜10房）", price: 10500, size: "100", weight: 5000 },
+  // 巨峰＆シャインマスカット食べ比べセット
+  { id: "PV033", parentProductId: "P009", product_id: "P009", name: "巨峰＆シャインマスカット 2kg（3〜4房）", price: 4200, size: "60", weight: 2000 },
+  { id: "PV034", parentProductId: "P009", product_id: "P009", name: "巨峰＆シャインマスカット 3kg（5〜6房）", price: 6300, size: "80", weight: 3000 },
+  { id: "PV035", parentProductId: "P009", product_id: "P009", name: "巨峰＆シャインマスカット 4kg（7〜8房）", price: 8400, size: "80", weight: 4000 },
+  { id: "PV036", parentProductId: "P009", product_id: "P009", name: "巨峰＆シャインマスカット 5kg（9〜10房）", price: 10500, size: "100", weight: 5000 },
+  // 白桃
+  { id: "PV037", parentProductId: "P010", product_id: "P010", name: "白桃 2kg", price: 2800, size: "60", weight: 2000 },
+  { id: "PV038", parentProductId: "P010", product_id: "P010", name: "白桃 3kg", price: 4200, size: "80", weight: 3000 },
+  { id: "PV039", parentProductId: "P010", product_id: "P010", name: "白桃 4kg", price: 5600, size: "80", weight: 4000 },
+  { id: "PV040", parentProductId: "P010", product_id: "P010", name: "白桃 5kg", price: 7000, size: "100", weight: 5000 },
+  // 白鳳
+  { id: "PV041", parentProductId: "P011", product_id: "P011", name: "白鳳 2kg", price: 2800, size: "60", weight: 2000 },
+  { id: "PV042", parentProductId: "P011", product_id: "P011", name: "白鳳 3kg", price: 4200, size: "80", weight: 3000 },
+  { id: "PV043", parentProductId: "P011", product_id: "P011", name: "白鳳 4kg", price: 5600, size: "80", weight: 4000 },
+  { id: "PV044", parentProductId: "P011", product_id: "P011", name: "白鳳 5kg", price: 7000, size: "100", weight: 5000 },
+  // さくら
+  { id: "PV045", parentProductId: "P012", product_id: "P012", name: "さくら 2kg", price: 2800, size: "60", weight: 2000 },
+  { id: "PV046", parentProductId: "P012", product_id: "P012", name: "さくら 3kg", price: 4200, size: "80", weight: 3000 },
+  { id: "PV047", parentProductId: "P012", product_id: "P012", name: "さくら 4kg", price: 5600, size: "80", weight: 4000 },
+  { id: "PV048", parentProductId: "P012", product_id: "P012", name: "さくら 5kg", price: 7000, size: "100", weight: 5000 },
+  // なつっこ
+  { id: "PV049", parentProductId: "P013", product_id: "P013", name: "なつっこ 2kg", price: 2800, size: "60", weight: 2000 },
+  { id: "PV050", parentProductId: "P013", product_id: "P013", name: "なつっこ 3kg", price: 4200, size: "80", weight: 3000 },
+  { id: "PV051", parentProductId: "P013", product_id: "P013", name: "なつっこ 4kg", price: 5600, size: "80", weight: 4000 },
+  { id: "PV052", parentProductId: "P013", product_id: "P013", name: "なつっこ 5kg", price: 7000, size: "100", weight: 5000 },
+  // おどろき
+  { id: "PV053", parentProductId: "P014", product_id: "P014", name: "おどろき 2kg", price: 2800, size: "60", weight: 2000 },
+  { id: "PV054", parentProductId: "P014", product_id: "P014", name: "おどろき 3kg", price: 4200, size: "80", weight: 3000 },
+  { id: "PV055", parentProductId: "P014", product_id: "P014", name: "おどろき 4kg", price: 5600, size: "80", weight: 4000 },
+  { id: "PV056", parentProductId: "P014", product_id: "P014", name: "おどろき 5kg", price: 7000, size: "100", weight: 5000 },
 ];
 
 export const MOCK_CUSTOMERS: Customer[] = [
