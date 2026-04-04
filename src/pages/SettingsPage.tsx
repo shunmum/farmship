@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useShippingSettings, type ShippingRate, type ConsolidationRule, type ShippingCarrier } from "@/hooks/useShippingSettings";
+import { useFarmInfo } from "@/hooks/useFarmInfo";
 import { Edit, Trash2, Plus, Package, Truck, Settings2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import PublicFormSettings from "@/components/PublicFormSettings";
@@ -31,10 +34,19 @@ import {
 
 const SettingsPage = () => {
   const { shippingRates, consolidationRules } = useShippingSettings();
+  const { farmInfo, saveFarmInfo } = useFarmInfo();
+  const { toast } = useToast();
 
   const [editingShippingRate, setEditingShippingRate] = useState<ShippingRate | null>(null);
   const [editingConsolidationRule, setEditingConsolidationRule] = useState<ConsolidationRule | null>(null);
   const [isAddingConsolidationRule, setIsAddingConsolidationRule] = useState(false);
+
+  // 農園基本情報フォーム
+  const [farmForm, setFarmForm] = useState({ ...farmInfo });
+  const handleSaveFarmInfo = () => {
+    saveFarmInfo(farmForm);
+    toast({ title: "✅ 農園情報を保存しました" });
+  };
 
   const carrierNames: Record<ShippingCarrier, string> = {
     yamato: "ヤマト運輸",
@@ -59,8 +71,9 @@ const SettingsPage = () => {
         </div>
 
         <Tabs defaultValue="basic" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-10 gap-1">
+          <TabsList className="flex flex-wrap gap-1 h-auto">
             <TabsTrigger value="basic">基本情報</TabsTrigger>
+            <TabsTrigger value="invoice-settings">請求書設定</TabsTrigger>
             <TabsTrigger value="products">商品マスター</TabsTrigger>
             <TabsTrigger value="shipping-mode">送料計算方式</TabsTrigger>
             <TabsTrigger value="zones">ゾーン管理</TabsTrigger>
@@ -75,33 +88,159 @@ const SettingsPage = () => {
           <TabsContent value="basic" className="space-y-4">
             <Card>
               <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-lg sm:text-xl">店舗基本情報</CardTitle>
-                <CardDescription className="text-sm">送り状に印刷される情報</CardDescription>
+                <CardTitle className="text-lg sm:text-xl">農園基本情報</CardTitle>
+                <CardDescription className="text-sm">請求書・送り状に印刷される情報</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6">
                 <div className="space-y-2">
-                  <Label htmlFor="shopName">店舗名 *</Label>
-                  <Input id="shopName" placeholder="○○農園" />
+                  <Label>農園名 *</Label>
+                  <Input
+                    value={farmForm.name}
+                    onChange={(e) => setFarmForm({ ...farmForm, name: e.target.value })}
+                    placeholder="例: 和田農園"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="postalCode">郵便番号 *</Label>
-                    <Input id="postalCode" placeholder="000-0000" />
+                    <Label>郵便番号</Label>
+                    <Input
+                      value={farmForm.postalCode}
+                      onChange={(e) => setFarmForm({ ...farmForm, postalCode: e.target.value })}
+                      placeholder="例: 000-0000"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">電話番号 *</Label>
-                    <Input id="phone" placeholder="000-0000-0000" />
+                    <Label>電話番号</Label>
+                    <Input
+                      value={farmForm.phone}
+                      onChange={(e) => setFarmForm({ ...farmForm, phone: e.target.value })}
+                      placeholder="例: 090-1234-5678"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">住所 *</Label>
-                  <Input id="address" placeholder="都道府県市区町村" />
+                  <Label>住所</Label>
+                  <Input
+                    value={farmForm.address}
+                    onChange={(e) => setFarmForm({ ...farmForm, address: e.target.value })}
+                    placeholder="例: 山形県〇〇市〇〇町1-2-3"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">メールアドレス</Label>
-                  <Input id="email" type="email" placeholder="info@farm.com" />
+                  <Label>メールアドレス</Label>
+                  <Input
+                    type="email"
+                    value={farmForm.email}
+                    onChange={(e) => setFarmForm({ ...farmForm, email: e.target.value })}
+                    placeholder="例: info@farm.com"
+                  />
                 </div>
-                <Button size="lg">保存</Button>
+                <Button size="lg" className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={handleSaveFarmInfo}>
+                  保存
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="invoice-settings" className="space-y-4">
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">振込先情報</CardTitle>
+                <CardDescription className="text-sm">請求書に記載する振込先</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4 sm:p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>銀行名</Label>
+                    <Input
+                      value={farmForm.bankName}
+                      onChange={(e) => setFarmForm({ ...farmForm, bankName: e.target.value })}
+                      placeholder="例: ○○銀行"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>支店名</Label>
+                    <Input
+                      value={farmForm.bankBranch}
+                      onChange={(e) => setFarmForm({ ...farmForm, bankBranch: e.target.value })}
+                      placeholder="例: △△支店"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>口座種別</Label>
+                    <select
+                      value={farmForm.bankType}
+                      onChange={(e) => setFarmForm({ ...farmForm, bankType: e.target.value as "普通" | "当座" })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="普通">普通</option>
+                      <option value="当座">当座</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>口座番号</Label>
+                    <Input
+                      value={farmForm.bankNumber}
+                      onChange={(e) => setFarmForm({ ...farmForm, bankNumber: e.target.value })}
+                      placeholder="例: 1234567"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>口座名義（カタカナ）</Label>
+                  <Input
+                    value={farmForm.bankHolder}
+                    onChange={(e) => setFarmForm({ ...farmForm, bankHolder: e.target.value })}
+                    placeholder="例: ワダノウエン"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">請求書オプション</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4 sm:p-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>消費税率（%）</Label>
+                    <Input
+                      type="number"
+                      value={farmForm.taxRate}
+                      onChange={(e) => setFarmForm({ ...farmForm, taxRate: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>支払期日（発行から何日後）</Label>
+                    <Input
+                      type="number"
+                      value={farmForm.paymentDueDays}
+                      onChange={(e) => setFarmForm({ ...farmForm, paymentDueDays: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>請求書番号プレフィックス</Label>
+                    <Input
+                      value={farmForm.invoicePrefix}
+                      onChange={(e) => setFarmForm({ ...farmForm, invoicePrefix: e.target.value })}
+                      placeholder="例: INV"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>請求書備考（定型文）</Label>
+                  <Textarea
+                    value={farmForm.invoiceNote}
+                    onChange={(e) => setFarmForm({ ...farmForm, invoiceNote: e.target.value })}
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+                <Button size="lg" className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={handleSaveFarmInfo}>
+                  保存
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
