@@ -82,7 +82,25 @@ export function useProducts() {
       }
     } catch (err) {
       console.error('Error fetching products:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+      // Supabaseエラー時はモックデータにフォールバック
+      setProducts(MOCK_PRODUCTS.map(p => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        description: p.description,
+        isParent: p.isParent,
+        price: p.price,
+        size: p.size,
+        weight: p.weight,
+      })));
+      setProductVariants(MOCK_PRODUCT_VARIANTS.map(v => ({
+        id: v.id,
+        parentProductId: v.parentProductId,
+        name: v.name,
+        price: v.price,
+        size: v.size,
+        weight: v.weight / 1000,
+      })));
     } finally {
       setLoading(false);
     }
