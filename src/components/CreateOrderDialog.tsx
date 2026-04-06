@@ -287,7 +287,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
         </button>
         {showNewCustomerForm && (
           <div className="p-4 space-y-3 bg-white">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">氏名 <span className="text-red-500">*</span></Label>
                 <Input
@@ -423,7 +423,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
         </button>
         {showNewRecipientForm && (
           <div className="p-4 space-y-3 bg-white">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">氏名 <span className="text-red-500">*</span></Label>
                 <Input
@@ -459,7 +459,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">続柄・関係</Label>
                 <Input

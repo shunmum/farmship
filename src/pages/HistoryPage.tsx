@@ -84,8 +84,9 @@ const HistoryPage = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
+            {/* デスクトップ テーブル */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
                 <thead>
                   <tr className="border-b bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
                     <th className="py-3 px-6 font-semibold">注文番号</th>
@@ -118,6 +119,34 @@ const HistoryPage = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* モバイル カードビュー */}
+            <div className="md:hidden divide-y">
+              {filteredOrders.map((order) => (
+                <div key={order.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{order.customerName}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{order.orderNumber}</p>
+                    </div>
+                    {getStatusBadge(order.status)}
+                  </div>
+                  <p className="text-sm text-gray-600 line-clamp-2">
+                    {order.products.map((p) => `${p.productName}×${p.quantity}`).join("、")}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{order.shippingCompany || "配送業者未設定"}</span>
+                    <span>{order.deliveryDate}</span>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button variant="outline" size="sm">
+                      <Printer className="h-3.5 w-3.5 mr-1" />印刷
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {filteredOrders.length === 0 && (
               <div className="text-center py-12 text-gray-400">
                 <p>配送データがありません</p>

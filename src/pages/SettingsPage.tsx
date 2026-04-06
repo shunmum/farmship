@@ -97,7 +97,7 @@ const SettingsPage = () => {
                     placeholder="例: 和田農園"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>郵便番号</Label>
                     <Input
@@ -146,7 +146,7 @@ const SettingsPage = () => {
                 <CardDescription className="text-sm">請求書に記載する振込先</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>銀行名</Label>
                     <Input
@@ -164,7 +164,7 @@ const SettingsPage = () => {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>口座種別</Label>
                     <select
@@ -200,7 +200,7 @@ const SettingsPage = () => {
                 <CardTitle className="text-lg sm:text-xl">請求書オプション</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>消費税率（%）</Label>
                     <Input

@@ -668,18 +668,18 @@ const InvoiceBatchPage = () => {
 
         {searched && filteredOrders.length > 0 && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>注文明細（{filteredOrders.length}件）<span className="ml-2 text-sm font-normal text-muted-foreground">→ {documentType}</span></CardTitle>
-              <div className="flex gap-2">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <CardTitle className="text-base sm:text-lg">注文明細（{filteredOrders.length}件）<span className="ml-2 text-sm font-normal text-muted-foreground">→ {documentType}</span></CardTitle>
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   onClick={() => setShowPreview(true)}
-                  className="gap-2"
+                  className="gap-2 flex-1 sm:flex-none"
                 >
                   <Eye className="h-4 w-4" />
                   プレビュー
                 </Button>
-                <Button onClick={handlePrint} className="bg-[#2d6a4f] hover:bg-[#1b4332] gap-2">
+                <Button onClick={handlePrint} className="bg-[#2d6a4f] hover:bg-[#1b4332] gap-2 flex-1 sm:flex-none">
                   <Printer className="h-4 w-4" />
                   印刷・PDF保存
                 </Button>

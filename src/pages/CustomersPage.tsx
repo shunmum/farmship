@@ -231,7 +231,117 @@ const CustomersPage = () => {
         {/* 送り主テーブル */}
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* モバイル カードビュー */}
+            <div className="md:hidden divide-y">
+              {filteredCustomers.map((customer) => (
+                <div key={customer.id} className="p-4 space-y-3">
+                  {/* タップで展開 */}
+                  <div
+                    className="flex items-start justify-between gap-2 cursor-pointer"
+                    onClick={() => toggleExpand(customer.id)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-gray-900">{customer.name}</p>
+                        {customer.memo && <StickyNote className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />}
+                        {getInvoiceBadge(customer.invoiceType)}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
+                        <Phone className="h-3.5 w-3.5" />
+                        {customer.phone}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#2d6a4f]/10 text-[#2d6a4f] text-xs font-semibold">
+                        {customer.recipients?.length || 0}
+                      </span>
+                      {expandedIds.has(customer.id)
+                        ? <ChevronDown className="h-4 w-4 text-gray-400" />
+                        : <ChevronRight className="h-4 w-4 text-gray-400" />}
+                    </div>
+                  </div>
+
+                  {/* アクションボタン */}
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 gap-1 text-[#2d6a4f]"
+                      onClick={() => { setAddRecipientForId(customer.id); setShowAddRecipient(true); }}
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />送り先追加
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingCustomer({ ...customer })}>
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-400" onClick={() => setDeletingCustomerId(customer.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+
+                  {/* 展開コンテンツ */}
+                  {expandedIds.has(customer.id) && (
+                    <div className="space-y-3 pt-1 border-t" onClick={(e) => e.stopPropagation()}>
+                      {customer.memo && (
+                        <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm mt-3">
+                          <StickyNote className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-semibold text-yellow-700 mb-0.5">メモ</p>
+                            <p className="text-gray-700 whitespace-pre-wrap">{customer.memo}</p>
+                          </div>
+                        </div>
+                      )}
+                      {customer.recipients && customer.recipients.length > 0 ? (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">送り先一覧</p>
+                          {customer.recipients.map((r) => (
+                            <div key={r.id} className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{r.name}</p>
+                                  {r.relation && (
+                                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#2d6a4f]/10 text-[#2d6a4f] mt-0.5 inline-block">{r.relation}</span>
+                                  )}
+                                </div>
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <button className="p-1.5 rounded hover:bg-gray-200" onClick={() => setEditingRecipient({ recipient: { ...r }, customerId: customer.id })}>
+                                    <Edit className="h-3.5 w-3.5 text-gray-500" />
+                                  </button>
+                                  <button className="p-1.5 rounded hover:bg-red-50" onClick={() => handleDeleteRecipient(customer.id, r.id)}>
+                                    <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="text-gray-500 text-xs space-y-0.5">
+                                <p>〒{r.postalCode}　{r.address}</p>
+                                <p>TEL: {r.phone}</p>
+                                {r.email && <p>{r.email}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-gray-400 py-1">
+                          <p>送り先が登録されていません</p>
+                          <button
+                            className="text-[#2d6a4f] hover:underline text-sm flex items-center gap-1"
+                            onClick={() => { setAddRecipientForId(customer.id); setShowAddRecipient(true); }}
+                          >
+                            <UserPlus className="h-3.5 w-3.5" />追加する
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {filteredCustomers.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-sm">顧客が見つかりません</div>
+              )}
+            </div>
+
+            {/* デスクトップ テーブル */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[600px]">
                 <thead>
                   <tr className="border-b bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
@@ -431,7 +541,7 @@ const CustomersPage = () => {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </div>{/* end デスクトップテーブル */}
           </CardContent>
         </Card>
       </div>

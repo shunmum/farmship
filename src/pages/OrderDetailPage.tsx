@@ -97,21 +97,21 @@ const OrderDetailPage = () => {
       <div className="mx-auto max-w-5xl space-y-6">
         {/* ヘッダー */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Button variant="ghost" size="sm" onClick={() => navigate("/orders")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">注文番号: {order.orderNumber}</h1>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold truncate">注文番号: {order.orderNumber}</h1>
               <p className="text-sm text-gray-500">注文日: {order.orderDate}</p>
             </div>
             {getStatusBadge(order.status)}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {order.paymentStatus === "未入金" && (
               <Button
                 size="sm"
-                className="bg-[#2d6a4f] hover:bg-[#1b4332] gap-1"
+                className="bg-[#2d6a4f] hover:bg-[#1b4332] gap-1 flex-1 sm:flex-none"
                 onClick={handleMarkPaid}
               >
                 <Banknote className="h-4 w-4" />
@@ -122,7 +122,7 @@ const OrderDetailPage = () => {
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1"
+                className="gap-1 flex-1 sm:flex-none"
                 onClick={handleMarkShipped}
               >
                 <Truck className="h-4 w-4" />
