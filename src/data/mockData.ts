@@ -8,6 +8,7 @@ export interface OrderItem {
   productId: string;
   productName: string;
   quantity: number;
+  shippingFee?: number; // 商品ごとの送料
 }
 
 export interface Order {

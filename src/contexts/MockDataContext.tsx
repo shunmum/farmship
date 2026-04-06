@@ -13,7 +13,7 @@ interface MockDataContextType {
   orders: Order[];
   products: Product[];
   productVariants: ProductVariant[];
-  addCustomer: (customer: Omit<Customer, "id" | "recipients">) => void;
+  addCustomer: (customer: Omit<Customer, "id" | "recipients">) => string;
   updateCustomer: (id: string, updates: Partial<Customer>) => void;
   deleteCustomer: (id: string) => void;
   addOrder: (order: Omit<Order, "id">) => void;
@@ -29,15 +29,17 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
   const products = MOCK_PRODUCTS;
   const productVariants = MOCK_PRODUCT_VARIANTS;
 
-  const addCustomer = (customer: Omit<Customer, "id" | "recipients">) => {
+  const addCustomer = (customer: Omit<Customer, "id" | "recipients">): string => {
+    const newId = `C${Date.now()}`;
     const newCustomer: Customer = {
       ...customer,
-      id: `C${Date.now()}`,
+      id: newId,
       lastPurchaseDate: "",
       totalSpent: 0,
       recipients: [],
     };
     setCustomers((prev) => [newCustomer, ...prev]);
+    return newId;
   };
 
   const updateCustomer = (id: string, updates: Partial<Customer>) => {

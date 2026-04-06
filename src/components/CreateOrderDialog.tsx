@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2 } from "lucide-react";
+import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2, PartyPopper, UserPlus, ChevronDown, ChevronUp } from "lucide-react";
 import { useMockData } from "@/contexts/MockDataContext";
+import { useAreaShipping } from "@/hooks/useAreaShipping";
 import type { Recipient, InvoiceType } from "@/types";
 import type { OrderCategory } from "@/data/mockData";
 
@@ -30,9 +31,24 @@ interface CreateOrderDialogProps {
   onSuccess: () => void;
 }
 
+const ALL_PREFECTURES = [
+  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
+  "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
+  "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+  "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
+  "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
+];
+
+function extractPrefecture(address: string): string | null {
+  return ALL_PREFECTURES.find((p) => address.includes(p)) ?? null;
+}
+
 export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
   const { toast } = useToast();
-  const { customers, products, productVariants, addOrder, updateCustomer } = useMockData();
+  const { customers, products, productVariants, addOrder, addCustomer, updateCustomer } = useMockData();
+  const { getShippingFee: getAreaShippingFee, getAreaByPrefecture } = useAreaShipping();
 
   const [step, setStep] = useState(1);
 
@@ -45,6 +61,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const [orderCategory, setOrderCategory] = useState<OrderCategory>("なし");
   const [invoiceType, setInvoiceType] = useState<InvoiceType | "">("");
 
+  // 新規顧客登録フォーム
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+
+  // 新規送り先登録フォーム
+  const [showNewRecipientForm, setShowNewRecipientForm] = useState(false);
+  const [newRecipient, setNewRecipient] = useState({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+
   // ダイアログを開くたびにリセット
   useEffect(() => {
     if (open) {
@@ -55,6 +79,18 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
   const recipients: Recipient[] = selectedCustomer?.recipients || [];
   const selectedRecipient = recipients.find((r) => r.id === selectedRecipientId);
+
+  // 商品ごとの送料を計算（送り先エリア＋重量＋クール便）
+  const calcItemShippingFee = (variantId: string): number => {
+    const variant = productVariants.find((v) => v.id === variantId);
+    if (!variant || !selectedRecipient) return 0;
+    const weightKg = variant.weight / 1000; // g → kg
+    const prefecture = extractPrefecture(selectedRecipient.address);
+    if (!prefecture) return 0;
+    const area = getAreaByPrefecture(prefecture);
+    if (!area) return 0;
+    return getAreaShippingFee(area.areaId, weightKg, isCool) ?? 0;
+  };
 
   const addOrderItem = (variantId: string, name: string, price: number) => {
     const existing = orderItems.findIndex((i) => i.productVariantId === variantId);
@@ -76,22 +112,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   };
 
   const itemsTotal = orderItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
-
-  const getShippingFee = () => {
-    const maxSize = Math.max(
-      ...orderItems.map((item) => {
-        const variant = productVariants.find((v) => v.id === item.productVariantId);
-        return parseInt(variant?.size || "60");
-      }),
-      60
-    );
-    let base = maxSize <= 60 ? 800 : maxSize <= 80 ? 1000 : 1200;
-    const cool = isCool ? (maxSize <= 100 ? 220 : 330) : 0;
-    return base + cool;
-  };
-
-  const shippingFee = orderItems.length > 0 ? getShippingFee() : 0;
-  const total = itemsTotal + shippingFee;
+  // 商品ごとの送料合計（数量に関わらず1商品ごとに1送料）
+  const totalShippingFee = orderItems.reduce((sum, i) => sum + calcItemShippingFee(i.productVariantId), 0);
+  const total = itemsTotal + totalShippingFee;
 
   const carrierLabel = carrier === "yamato" ? "ヤマト運輸" : carrier === "sagawa" ? "佐川急便" : "ゆうパック";
 
@@ -112,6 +135,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
         productId: i.productVariantId,
         productName: i.productName,
         quantity: i.quantity,
+        shippingFee: calcItemShippingFee(i.productVariantId),
       })),
       amount: total,
       deliveryDate,
@@ -128,9 +152,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     }
 
     toast({ title: "✅ 注文を登録しました", description: `注文番号: ${orderNumber}` });
-    resetForm();
     onSuccess();
-    onOpenChange(false);
+    setStep(6); // 完了ステップへ
   };
 
   const resetForm = () => {
@@ -143,6 +166,62 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setIsCool(false);
     setOrderCategory("なし");
     setInvoiceType("");
+    setShowNewCustomerForm(false);
+    setNewCustomer({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+    setShowNewRecipientForm(false);
+    setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+  };
+
+  const handleAddNewCustomer = () => {
+    if (!newCustomer.name || !newCustomer.phone) return;
+    const newId = addCustomer({
+      name: newCustomer.name,
+      phone: newCustomer.phone,
+      email: newCustomer.email,
+      postalCode: newCustomer.postalCode,
+      address: newCustomer.address,
+      memo: newCustomer.memo,
+    });
+    setSelectedCustomerId(newId);
+    setInvoiceType("");
+    toast({ title: "✅ 顧客を登録しました", description: newCustomer.name });
+    setShowNewCustomerForm(false);
+    setNewCustomer({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+  };
+
+  const handleAddNewRecipient = () => {
+    if (!newRecipient.name || !newRecipient.phone || !selectedCustomer) return;
+    const newId = `R${Date.now()}`;
+    const recipient = {
+      id: newId,
+      customerId: selectedCustomer.id,
+      name: newRecipient.name,
+      phone: newRecipient.phone,
+      postalCode: newRecipient.postalCode,
+      address: newRecipient.address,
+      relation: newRecipient.relation || undefined,
+      email: newRecipient.email || undefined,
+    };
+    updateCustomer(selectedCustomer.id, {
+      recipients: [...(selectedCustomer.recipients || []), recipient],
+    });
+    setSelectedRecipientId(newId);
+    toast({ title: "✅ 送り先を登録しました", description: newRecipient.name });
+    setShowNewRecipientForm(false);
+    setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+  };
+
+  // 同じ顧客で続けて入力（送り先・商品・配送情報をリセット）
+  const continueWithSameCustomer = () => {
+    setStep(2);
+    setSelectedRecipientId("");
+    setOrderItems([]);
+    setDeliveryDate("");
+    setCarrier("yamato");
+    setIsCool(false);
+    setOrderCategory("なし");
+    setShowNewRecipientForm(false);
+    setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
   };
 
   // ステップ1: 顧客選択
@@ -170,13 +249,106 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           </SelectContent>
         </Select>
       </div>
-      {selectedCustomer && (
+      {selectedCustomer && !showNewCustomerForm && (
         <div className="bg-[#2d6a4f]/5 p-4 rounded-lg text-sm space-y-1">
           <p className="font-medium">{selectedCustomer.name}</p>
           <p className="text-gray-500">{selectedCustomer.phone}</p>
           <p className="text-gray-500">{selectedCustomer.email}</p>
         </div>
       )}
+
+      {/* 新規顧客登録フォーム */}
+      <div className="border rounded-lg overflow-hidden">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[#2d6a4f] bg-[#2d6a4f]/5 hover:bg-[#2d6a4f]/10 transition-colors"
+          onClick={() => setShowNewCustomerForm((v) => !v)}
+        >
+          <span className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4" />
+            新規顧客を登録する
+          </span>
+          {showNewCustomerForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        {showNewCustomerForm && (
+          <div className="p-4 space-y-3 bg-white">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">氏名 <span className="text-red-500">*</span></Label>
+                <Input
+                  placeholder="山田 太郎"
+                  value={newCustomer.name}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">電話番号 <span className="text-red-500">*</span></Label>
+                <Input
+                  placeholder="090-0000-0000"
+                  value={newCustomer.phone}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">メールアドレス</Label>
+              <Input
+                placeholder="example@email.com"
+                type="email"
+                value={newCustomer.email}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">郵便番号</Label>
+                <Input
+                  placeholder="000-0000"
+                  value={newCustomer.postalCode}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, postalCode: e.target.value }))}
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label className="text-xs">住所</Label>
+                <Input
+                  placeholder="東京都渋谷区..."
+                  value={newCustomer.address}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, address: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">メモ</Label>
+              <Input
+                placeholder="備考など"
+                value={newCustomer.memo}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, memo: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setShowNewCustomerForm(false);
+                  setNewCustomer({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+                }}
+              >
+                キャンセル
+              </Button>
+              <Button
+                size="sm"
+                className="bg-[#2d6a4f] hover:bg-[#1b4332]"
+                onClick={handleAddNewCustomer}
+                disabled={!newCustomer.name || !newCustomer.phone}
+              >
+                登録して選択
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={() => onOpenChange(false)}>キャンセル</Button>
         <Button className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => setStep(2)} disabled={!selectedCustomerId}>次へ</Button>
@@ -191,6 +363,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
         <MapPin className="h-5 w-5 text-[#2d6a4f]" />
         <span>配送先を選択</span>
       </div>
+      {selectedCustomer && (
+        <div className="bg-[#2d6a4f]/5 px-4 py-2 rounded-lg text-sm">
+          <span className="text-gray-500">送り主：</span>
+          <span className="font-medium">{selectedCustomer.name}</span>
+        </div>
+      )}
       <div className="space-y-2">
         <Label>配送先（送り先）</Label>
         <Select value={selectedRecipientId} onValueChange={setSelectedRecipientId}>
@@ -206,7 +384,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           </SelectContent>
         </Select>
       </div>
-      {selectedRecipient && (
+      {selectedRecipient && !showNewRecipientForm && (
         <div className="bg-[#2d6a4f]/5 p-4 rounded-lg text-sm space-y-1">
           <p className="font-medium">{selectedRecipient.name}{selectedRecipient.relation ? `（${selectedRecipient.relation}）` : ""}</p>
           <p className="text-gray-500">〒{selectedRecipient.postalCode}</p>
@@ -214,6 +392,101 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           <p className="text-gray-500">TEL: {selectedRecipient.phone}</p>
         </div>
       )}
+
+      {/* 新規送り先登録フォーム */}
+      <div className="border rounded-lg overflow-hidden">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[#2d6a4f] bg-[#2d6a4f]/5 hover:bg-[#2d6a4f]/10 transition-colors"
+          onClick={() => setShowNewRecipientForm((v) => !v)}
+        >
+          <span className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4" />
+            新規送り先を登録する
+          </span>
+          {showNewRecipientForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        {showNewRecipientForm && (
+          <div className="p-4 space-y-3 bg-white">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">氏名 <span className="text-red-500">*</span></Label>
+                <Input
+                  placeholder="鈴木 花子"
+                  value={newRecipient.name}
+                  onChange={(e) => setNewRecipient((p) => ({ ...p, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">電話番号 <span className="text-red-500">*</span></Label>
+                <Input
+                  placeholder="090-0000-0000"
+                  value={newRecipient.phone}
+                  onChange={(e) => setNewRecipient((p) => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">郵便番号</Label>
+                <Input
+                  placeholder="000-0000"
+                  value={newRecipient.postalCode}
+                  onChange={(e) => setNewRecipient((p) => ({ ...p, postalCode: e.target.value }))}
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label className="text-xs">住所</Label>
+                <Input
+                  placeholder="東京都渋谷区..."
+                  value={newRecipient.address}
+                  onChange={(e) => setNewRecipient((p) => ({ ...p, address: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">続柄・関係</Label>
+                <Input
+                  placeholder="母、友人 など"
+                  value={newRecipient.relation}
+                  onChange={(e) => setNewRecipient((p) => ({ ...p, relation: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">メールアドレス</Label>
+                <Input
+                  placeholder="example@email.com"
+                  type="email"
+                  value={newRecipient.email}
+                  onChange={(e) => setNewRecipient((p) => ({ ...p, email: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setShowNewRecipientForm(false);
+                  setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+                }}
+              >
+                キャンセル
+              </Button>
+              <Button
+                size="sm"
+                className="bg-[#2d6a4f] hover:bg-[#1b4332]"
+                onClick={handleAddNewRecipient}
+                disabled={!newRecipient.name || !newRecipient.phone}
+              >
+                登録して選択
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={() => setStep(1)}>戻る</Button>
         <Button className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => setStep(3)} disabled={!selectedRecipientId}>次へ</Button>
@@ -340,9 +613,34 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
             <p className="text-xs text-[#2d6a4f]">※ 確定時にこの顧客の請求書種別が更新されます</p>
           )}
         </div>
+        {/* 送料内訳（商品ごと） */}
         <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
-          <div className="flex justify-between"><span>商品合計</span><span className="font-semibold">¥{itemsTotal.toLocaleString()}</span></div>
-          <div className="flex justify-between"><span>送料</span><span className="font-semibold">¥{shippingFee.toLocaleString()}</span></div>
+          <p className="font-semibold text-gray-700 mb-2">金額内訳</p>
+          {orderItems.map((item) => {
+            const fee = calcItemShippingFee(item.productVariantId);
+            return (
+              <div key={item.productVariantId} className="space-y-0.5">
+                <div className="flex justify-between text-gray-600">
+                  <span className="truncate max-w-[220px]">{item.productName} × {item.quantity}</span>
+                  <span>¥{(item.unitPrice * item.quantity).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-gray-400 text-xs pl-3">
+                  <span>└ 送料（{isCool ? "クール便" : "通常"}）</span>
+                  <span>{fee > 0 ? `¥${fee.toLocaleString()}` : "—"}</span>
+                </div>
+              </div>
+            );
+          })}
+          <div className="border-t pt-2 mt-2 space-y-1">
+            <div className="flex justify-between text-gray-600">
+              <span>商品合計</span>
+              <span className="font-semibold">¥{itemsTotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>送料合計</span>
+              <span className="font-semibold">¥{totalShippingFee.toLocaleString()}</span>
+            </div>
+          </div>
           <div className="border-t pt-2 flex justify-between font-bold text-base">
             <span>合計</span><span className="text-[#2d6a4f]">¥{total.toLocaleString()}</span>
           </div>
@@ -375,13 +673,22 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           <p className="text-gray-500">TEL: {selectedRecipient?.phone}</p>
         </div>
         <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-1">
-          <p className="font-semibold mb-1">商品</p>
-          {orderItems.map((item) => (
-            <div key={item.productVariantId} className="flex justify-between">
-              <span>{item.productName} × {item.quantity}</span>
-              <span>¥{(item.unitPrice * item.quantity).toLocaleString()}</span>
-            </div>
-          ))}
+          <p className="font-semibold mb-2">商品・送料内訳</p>
+          {orderItems.map((item) => {
+            const fee = calcItemShippingFee(item.productVariantId);
+            return (
+              <div key={item.productVariantId} className="mb-1">
+                <div className="flex justify-between">
+                  <span>{item.productName} × {item.quantity}</span>
+                  <span>¥{(item.unitPrice * item.quantity).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-gray-400 text-xs pl-3">
+                  <span>└ 送料</span>
+                  <span>{fee > 0 ? `¥${fee.toLocaleString()}` : "—"}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
         <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-1">
           <p className="font-semibold mb-1">配送情報</p>
@@ -391,8 +698,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           <p>種別: {orderCategory}</p>
           <p>請求書種別: {invoiceType || "未設定"}</p>
         </div>
-        <div className="bg-[#2d6a4f]/10 p-4 rounded-lg">
-          <div className="flex justify-between font-bold text-lg">
+        <div className="bg-[#2d6a4f]/10 p-4 rounded-lg space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">商品合計</span>
+            <span>¥{itemsTotal.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">送料合計</span>
+            <span>¥{totalShippingFee.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between font-bold text-lg pt-1 border-t">
             <span>合計金額</span>
             <span className="text-[#2d6a4f]">¥{total.toLocaleString()}</span>
           </div>
@@ -401,6 +716,36 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={() => setStep(4)}>戻る</Button>
         <Button className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={handleSubmit}>注文を確定</Button>
+      </div>
+    </div>
+  );
+
+  // ステップ6: 完了 / 連続入力
+  const renderStep6 = () => (
+    <div className="space-y-6 text-center">
+      <div className="flex flex-col items-center gap-3 py-4">
+        <PartyPopper className="h-12 w-12 text-[#2d6a4f]" />
+        <p className="text-xl font-bold text-[#2d6a4f]">注文を登録しました！</p>
+        <p className="text-gray-500 text-sm">同じ発注者で続けて別の送り先に注文しますか？</p>
+      </div>
+      <div className="bg-[#2d6a4f]/5 p-3 rounded-lg text-sm">
+        <span className="text-gray-500">送り主：</span>
+        <span className="font-medium">{selectedCustomer?.name}</span>
+      </div>
+      <div className="flex flex-col gap-3">
+        <Button
+          className="bg-[#2d6a4f] hover:bg-[#1b4332] w-full"
+          onClick={continueWithSameCustomer}
+        >
+          続けて別の送り先に注文する
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => { resetForm(); onOpenChange(false); }}
+        >
+          完了（閉じる）
+        </Button>
       </div>
     </div>
   );
@@ -414,26 +759,31 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           <DialogTitle className="text-[#2d6a4f]">新規注文を入力する</DialogTitle>
         </DialogHeader>
 
-        {/* ステップインジケーター */}
-        <div className="flex items-center justify-center gap-1 mb-4">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div key={s} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                step >= s ? "bg-[#2d6a4f] text-white" : "bg-gray-100 text-gray-400"
-              }`}>
-                {s}
-              </div>
-              {s < 5 && <div className={`w-6 h-1 ${step > s ? "bg-[#2d6a4f]" : "bg-gray-100"}`} />}
+        {/* ステップインジケーター（完了ステップは非表示） */}
+        {step <= 5 && (
+          <>
+            <div className="flex items-center justify-center gap-1 mb-4">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <div key={s} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+                    step >= s ? "bg-[#2d6a4f] text-white" : "bg-gray-100 text-gray-400"
+                  }`}>
+                    {s}
+                  </div>
+                  {s < 5 && <div className={`w-6 h-1 ${step > s ? "bg-[#2d6a4f]" : "bg-gray-100"}`} />}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <p className="text-center text-sm text-gray-500 mb-4">{stepLabels[step - 1]}</p>
+            <p className="text-center text-sm text-gray-500 mb-4">{stepLabels[step - 1]}</p>
+          </>
+        )}
 
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
         {step === 5 && renderStep5()}
+        {step === 6 && renderStep6()}
       </DialogContent>
     </Dialog>
   );
