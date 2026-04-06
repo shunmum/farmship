@@ -118,8 +118,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
 
   const carrierLabel = carrier === "yamato" ? "ヤマト運輸" : carrier === "sagawa" ? "佐川急便" : "ゆうパック";
 
-  const handleSubmit = () => {
-    if (!selectedCustomer || !selectedRecipient || orderItems.length === 0 || !deliveryDate) return;
+  // 注文を保存して注文番号を返す（共通処理）
+  const submitOrder = (): string | null => {
+    if (!selectedCustomer || !selectedRecipient || orderItems.length === 0 || !deliveryDate) return null;
 
     const orderDate = new Date().toISOString().split("T")[0];
     const orderNumber = `ORD-${orderDate.replace(/-/g, "")}-${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`;
@@ -146,14 +147,28 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       isCoolDelivery: isCool,
     });
 
-    // 請求書種別が変更されていれば顧客情報を更新
     if (invoiceType && selectedCustomer.invoiceType !== invoiceType) {
       updateCustomer(selectedCustomer.id, { invoiceType });
     }
 
-    toast({ title: "✅ 注文を登録しました", description: `注文番号: ${orderNumber}` });
     onSuccess();
-    setStep(6); // 完了ステップへ
+    return orderNumber;
+  };
+
+  // 確定して完了ステップへ
+  const handleSubmit = () => {
+    const orderNumber = submitOrder();
+    if (!orderNumber) return;
+    toast({ title: "✅ 注文を登録しました", description: `注文番号: ${orderNumber}` });
+    setStep(6);
+  };
+
+  // 確定して続けて同じ顧客の次の送り先へ
+  const handleSubmitAndContinue = () => {
+    const orderNumber = submitOrder();
+    if (!orderNumber) return;
+    toast({ title: "✅ 注文を登録しました", description: `注文番号: ${orderNumber}` });
+    continueWithSameCustomer();
   };
 
   const resetForm = () => {
@@ -713,9 +728,18 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           </div>
         </div>
       </div>
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-between gap-2">
         <Button variant="outline" onClick={() => setStep(4)}>戻る</Button>
-        <Button className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={handleSubmit}>注文を確定</Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="border-[#2d6a4f] text-[#2d6a4f] hover:bg-[#2d6a4f]/5"
+            onClick={handleSubmitAndContinue}
+          >
+            続けて登録
+          </Button>
+          <Button className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={handleSubmit}>注文を確定</Button>
+        </div>
       </div>
     </div>
   );
