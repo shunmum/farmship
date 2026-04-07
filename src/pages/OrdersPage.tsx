@@ -317,6 +317,7 @@ const OrdersPage = () => {
                     <th className="pb-3 font-medium">商品・数量</th>
                     <th className="pb-3 font-medium">金額</th>
                     <th className="pb-3 font-medium">配送予定日</th>
+                    <th className="pb-3 font-medium">クール便</th>
                     <th className="pb-3 font-medium">種別</th>
                     <th className="pb-3 font-medium">請求書</th>
                     <th className="pb-3 font-medium">配送ステータス</th>
@@ -341,6 +342,13 @@ const OrdersPage = () => {
                       </td>
                       <td className="py-4 font-semibold text-primary">¥{order.amount.toLocaleString()}</td>
                       <td className="py-4">{order.deliveryDate}</td>
+                      <td className="py-4">
+                        {order.isCoolDelivery ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">クール</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">なし</span>
+                        )}
+                      </td>
                       <td className="py-4">
                         <Select
                           value={order.orderCategory || "なし"}
@@ -398,6 +406,9 @@ const OrdersPage = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-xs font-bold text-muted-foreground">No.{orderNumberMap.get(order.id)}</span>
+                          {order.isCoolDelivery && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">クール</Badge>
+                          )}
                           {order.orderCategory && order.orderCategory !== "なし" && getCategoryBadge(order.orderCategory)}
                           {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
                         </div>
