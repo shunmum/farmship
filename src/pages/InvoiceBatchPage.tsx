@@ -117,22 +117,31 @@ td.right { text-align: right; }
   font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between;
 }
 .invoice-reg { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.recipient-header td {
+  background: #f0fdf4;
+  color: #2d6a4f;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #bbf7d0;
+}
 @media print {
   body { background: #fff; padding: 0; }
   .page { box-shadow: none; border-radius: 0; max-width: 100%; }
 }
 `;
 
-function buildLineItems(orders: Order[], productVariants: ProductVariant[]) {
-  interface LineItem {
-    orderDate: string;
-    name: string;
-    recipient: string;
-    quantity: number;
-    unitPrice: number;
-    amount: number;
-    isShipping?: boolean;
-  }
+interface LineItem {
+  orderDate: string;
+  name: string;
+  recipient: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  isShipping?: boolean;
+}
+
+function buildLineItems(orders: Order[], productVariants: ProductVariant[]): LineItem[] {
   const lineItems: LineItem[] = [];
   for (const order of orders) {
     let productTotal = 0;
@@ -165,6 +174,35 @@ function buildLineItems(orders: Order[], productVariants: ProductVariant[]) {
     }
   }
   return lineItems;
+}
+
+// 送り先ごとにグループ化したテーブル行HTML（No.列なし版）
+function buildGroupedItemRows(lineItems: LineItem[], fmt: (n: number) => string): string {
+  // 受取人の順序を保ちながらグループ化
+  const groups: { recipient: string; items: LineItem[] }[] = [];
+  for (const item of lineItems) {
+    const last = groups[groups.length - 1];
+    if (last && last.recipient === item.recipient) {
+      last.items.push(item);
+    } else {
+      groups.push({ recipient: item.recipient, items: [item] });
+    }
+  }
+
+  return groups.map((group) => {
+    const headerRow = `
+    <tr class="recipient-header">
+      <td colspan="4">${group.recipient} 様宛て</td>
+    </tr>`;
+    const itemRows = group.items.map((item) => `
+    <tr>
+      <td style="padding-left:16px">${item.name}</td>
+      <td class="right">${item.isShipping ? "1 式" : `${item.quantity} 個`}</td>
+      <td class="right">${item.isShipping ? "-" : fmt(item.unitPrice)}</td>
+      <td class="right">${fmt(item.amount)}</td>
+    </tr>`).join("");
+    return headerRow + itemRows;
+  }).join("");
 }
 
 
@@ -218,16 +256,7 @@ function generateInvoiceHTML(params: DocParams): string {
   const tax = Math.floor(subtotal * farmInfo.taxRate / 100);
   const total = subtotal + tax;
 
-  const itemRows = lineItems.map((item, idx) => `
-    <tr>
-      <td class="center">${idx + 1}</td>
-      <td>${item.name}</td>
-      <td>${item.recipient}</td>
-      <td class="right">${item.isShipping ? "1 式" : `${item.quantity} 個`}</td>
-      <td class="right">${item.isShipping ? "-" : fmt(item.unitPrice)}</td>
-      <td class="right">${fmt(item.amount)}</td>
-    </tr>
-  `).join("");
+  const itemRows = buildGroupedItemRows(lineItems, fmt);
 
   const regLine = farmInfo.invoiceRegistrationNumber
     ? `<div class="invoice-reg">適格請求書発行事業者 登録番号：${farmInfo.invoiceRegistrationNumber}</div>`
@@ -275,12 +304,10 @@ function generateInvoiceHTML(params: DocParams): string {
   </div>
   <table>
     <thead><tr>
-      <th style="width:4%">No.</th>
-      <th style="width:30%">品目</th>
-      <th style="width:22%">送り先</th>
-      <th style="width:10%;text-align:right">数量</th>
-      <th style="width:14%;text-align:right">単価（税込）</th>
-      <th style="width:14%;text-align:right">金額（税込）</th>
+      <th style="width:36%">品目</th>
+      <th style="width:12%;text-align:right">数量</th>
+      <th style="width:24%;text-align:right">単価（税込）</th>
+      <th style="width:24%;text-align:right">金額（税込）</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
@@ -300,16 +327,7 @@ function generateInvoiceDeliveryNoteHTML(params: DocParams): string {
   const tax = Math.floor(subtotal * farmInfo.taxRate / 100);
   const total = subtotal + tax;
 
-  const itemRows = lineItems.map((item, idx) => `
-    <tr>
-      <td class="center">${idx + 1}</td>
-      <td>${item.name}</td>
-      <td>${item.recipient}</td>
-      <td class="right">${item.isShipping ? "1 式" : `${item.quantity} 個`}</td>
-      <td class="right">${item.isShipping ? "-" : fmt(item.unitPrice)}</td>
-      <td class="right">${fmt(item.amount)}</td>
-    </tr>
-  `).join("");
+  const itemRows = buildGroupedItemRows(lineItems, fmt);
 
   const regLine = farmInfo.invoiceRegistrationNumber
     ? `<div class="invoice-reg">適格請求書発行事業者 登録番号：${farmInfo.invoiceRegistrationNumber}</div>`
@@ -382,12 +400,10 @@ function generateInvoiceDeliveryNoteHTML(params: DocParams): string {
   <div class="section-title">請求明細</div>
   <table>
     <thead><tr>
-      <th style="width:4%">No.</th>
-      <th style="width:30%">品目</th>
-      <th style="width:22%">送り先</th>
-      <th style="width:10%;text-align:right">数量</th>
-      <th style="width:14%;text-align:right">単価（税込）</th>
-      <th style="width:14%;text-align:right">金額（税込）</th>
+      <th style="width:36%">品目</th>
+      <th style="width:12%;text-align:right">数量</th>
+      <th style="width:24%;text-align:right">単価（税込）</th>
+      <th style="width:24%;text-align:right">金額（税込）</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
@@ -412,16 +428,7 @@ function generateReceiptHTML(params: DocParams): string {
     : "";
   const purposeText = orders.map((o) => o.products.map((p) => p.productName).join("・")).join("、");
 
-  const itemRows = lineItems.map((item, idx) => `
-    <tr>
-      <td class="center">${idx + 1}</td>
-      <td>${item.name}</td>
-      <td>${item.recipient}</td>
-      <td class="right">${item.isShipping ? "1 式" : `${item.quantity} 個`}</td>
-      <td class="right">${item.isShipping ? "-" : fmt(item.unitPrice)}</td>
-      <td class="right">${fmt(item.amount)}</td>
-    </tr>
-  `).join("");
+  const itemRows = buildGroupedItemRows(lineItems, fmt);
 
   return `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="UTF-8" />
@@ -477,12 +484,10 @@ function generateReceiptHTML(params: DocParams): string {
 
   <table>
     <thead><tr>
-      <th style="width:4%">No.</th>
-      <th style="width:32%">品目</th>
-      <th style="width:22%">送り先</th>
-      <th style="width:10%;text-align:right">数量</th>
-      <th style="width:14%;text-align:right">単価（税込）</th>
-      <th style="width:14%;text-align:right">金額（税込）</th>
+      <th style="width:36%">品目</th>
+      <th style="width:12%;text-align:right">数量</th>
+      <th style="width:24%;text-align:right">単価（税込）</th>
+      <th style="width:24%;text-align:right">金額（税込）</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
