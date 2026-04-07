@@ -139,6 +139,7 @@ interface LineItem {
   unitPrice: number;
   amount: number;
   isShipping?: boolean;
+  isCoolDelivery?: boolean;
 }
 
 function buildLineItems(orders: Order[], productVariants: ProductVariant[]): LineItem[] {
@@ -157,26 +158,27 @@ function buildLineItems(orders: Order[], productVariants: ProductVariant[]): Lin
         quantity: item.quantity,
         unitPrice,
         amount,
+        isCoolDelivery: order.isCoolDelivery,
       });
     }
     const shipping = order.amount - productTotal;
     if (shipping > 0) {
-      const coolLabel = order.isCoolDelivery ? "クール便" : "";
       lineItems.push({
         orderDate: order.orderDate,
-        name: `送料${coolLabel ? `（${coolLabel}・${order.shippingCompany || "配送"}）` : `（${order.shippingCompany || "配送"}）`}`,
+        name: `送料（${order.shippingCompany || "配送"}）`,
         recipient: order.recipientName || order.customerName,
         quantity: 1,
         unitPrice: shipping,
         amount: shipping,
         isShipping: true,
+        isCoolDelivery: order.isCoolDelivery,
       });
     }
   }
   return lineItems;
 }
 
-// 送り先ごとにグループ化したテーブル行HTML（No.列なし版）
+// 送り先ごとにグループ化したテーブル行HTML
 function buildGroupedItemRows(lineItems: LineItem[], fmt: (n: number) => string): string {
   // 受取人の順序を保ちながらグループ化
   const groups: { recipient: string; items: LineItem[] }[] = [];
@@ -192,11 +194,12 @@ function buildGroupedItemRows(lineItems: LineItem[], fmt: (n: number) => string)
   return groups.map((group) => {
     const headerRow = `
     <tr class="recipient-header">
-      <td colspan="4">${group.recipient} 様宛て</td>
+      <td colspan="5">${group.recipient} 様宛て</td>
     </tr>`;
     const itemRows = group.items.map((item) => `
     <tr>
       <td style="padding-left:16px">${item.name}</td>
+      <td class="center">${item.isCoolDelivery ? '<span style="color:#1d4ed8;font-weight:600">あり</span>' : '<span style="color:#9ca3af">なし</span>'}</td>
       <td class="right">${item.isShipping ? "1 式" : `${item.quantity} 個`}</td>
       <td class="right">${item.isShipping ? "-" : fmt(item.unitPrice)}</td>
       <td class="right">${fmt(item.amount)}</td>
@@ -304,10 +307,11 @@ function generateInvoiceHTML(params: DocParams): string {
   </div>
   <table>
     <thead><tr>
-      <th style="width:36%">品目</th>
-      <th style="width:12%;text-align:right">数量</th>
-      <th style="width:24%;text-align:right">単価（税込）</th>
-      <th style="width:24%;text-align:right">金額（税込）</th>
+      <th style="width:32%">品目</th>
+      <th style="width:10%;text-align:center">クール便</th>
+      <th style="width:10%;text-align:right">数量</th>
+      <th style="width:22%;text-align:right">単価（税込）</th>
+      <th style="width:22%;text-align:right">金額（税込）</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
@@ -400,10 +404,11 @@ function generateInvoiceDeliveryNoteHTML(params: DocParams): string {
   <div class="section-title">請求明細</div>
   <table>
     <thead><tr>
-      <th style="width:36%">品目</th>
-      <th style="width:12%;text-align:right">数量</th>
-      <th style="width:24%;text-align:right">単価（税込）</th>
-      <th style="width:24%;text-align:right">金額（税込）</th>
+      <th style="width:32%">品目</th>
+      <th style="width:10%;text-align:center">クール便</th>
+      <th style="width:10%;text-align:right">数量</th>
+      <th style="width:22%;text-align:right">単価（税込）</th>
+      <th style="width:22%;text-align:right">金額（税込）</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
@@ -484,10 +489,11 @@ function generateReceiptHTML(params: DocParams): string {
 
   <table>
     <thead><tr>
-      <th style="width:36%">品目</th>
-      <th style="width:12%;text-align:right">数量</th>
-      <th style="width:24%;text-align:right">単価（税込）</th>
-      <th style="width:24%;text-align:right">金額（税込）</th>
+      <th style="width:32%">品目</th>
+      <th style="width:10%;text-align:center">クール便</th>
+      <th style="width:10%;text-align:right">数量</th>
+      <th style="width:22%;text-align:right">単価（税込）</th>
+      <th style="width:22%;text-align:right">金額（税込）</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
