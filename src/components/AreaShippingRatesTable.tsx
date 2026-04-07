@@ -11,9 +11,9 @@ const AreaShippingRatesTable = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>エリア別配送料</CardTitle>
-          <CardDescription>配達所要日数：3〜5営業日（全エリア共通）</CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">エリア別配送料</CardTitle>
+          <CardDescription className="text-sm">配達所要日数：3〜5営業日（全エリア共通）</CardDescription>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           {/* 通常配送 */}
