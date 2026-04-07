@@ -84,7 +84,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const calcItemShippingFee = (variantId: string): number => {
     const variant = productVariants.find((v) => v.id === variantId);
     if (!variant || !selectedRecipient) return 0;
-    const weightKg = variant.weight / 1000; // g → kg
+    const weightKg = variant.weight; // kg単位で保存
     const prefecture = extractPrefecture(selectedRecipient.address);
     if (!prefecture) return 0;
     const area = getAreaByPrefecture(prefecture);
