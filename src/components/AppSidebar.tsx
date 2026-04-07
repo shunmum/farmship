@@ -54,8 +54,8 @@ export function AppSidebar() {
         {/* モバイルメニュー */}
         <div
           className={cn(
-            "fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-[#047857] to-[#065F46] shadow-xl flex flex-col transition-transform duration-300 z-40",
-            isOpen ? "translate-x-0" : "-translate-x-full"
+            "fixed right-0 top-0 h-screen w-64 bg-gradient-to-b from-[#047857] to-[#065F46] shadow-xl flex flex-col transition-transform duration-300 z-40",
+            isOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
           {/* Logo */}
