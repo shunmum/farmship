@@ -145,12 +145,10 @@ interface LineItem {
 function buildLineItems(orders: Order[], productVariants: ProductVariant[]): LineItem[] {
   const lineItems: LineItem[] = [];
   for (const order of orders) {
-    let productTotal = 0;
     for (const item of order.products) {
       const variant = productVariants.find((v) => v.id === item.productId);
       const unitPrice = variant?.price ?? 0;
       const amount = unitPrice * item.quantity;
-      productTotal += amount;
       lineItems.push({
         orderDate: order.orderDate,
         name: item.productName,
@@ -160,19 +158,40 @@ function buildLineItems(orders: Order[], productVariants: ProductVariant[]): Lin
         amount,
         isCoolDelivery: order.isCoolDelivery,
       });
+      // 商品ごとの送料（品種ごとに発送時期が異なるため個別に設定）
+      if (item.shippingFee && item.shippingFee > 0) {
+        lineItems.push({
+          orderDate: order.orderDate,
+          name: `送料（${order.shippingCompany || "配送"}）`,
+          recipient: order.recipientName || order.customerName,
+          quantity: 1,
+          unitPrice: item.shippingFee,
+          amount: item.shippingFee,
+          isShipping: true,
+          isCoolDelivery: order.isCoolDelivery,
+        });
+      }
     }
-    const shipping = order.amount - productTotal;
-    if (shipping > 0) {
-      lineItems.push({
-        orderDate: order.orderDate,
-        name: `送料（${order.shippingCompany || "配送"}）`,
-        recipient: order.recipientName || order.customerName,
-        quantity: 1,
-        unitPrice: shipping,
-        amount: shipping,
-        isShipping: true,
-        isCoolDelivery: order.isCoolDelivery,
-      });
+    // shippingFee が未設定の旧データ向けフォールバック
+    const hasPerItemFees = order.products.some((p) => p.shippingFee && p.shippingFee > 0);
+    if (!hasPerItemFees) {
+      const productTotal = order.products.reduce((s, item) => {
+        const variant = productVariants.find((v) => v.id === item.productId);
+        return s + (variant?.price ?? 0) * item.quantity;
+      }, 0);
+      const shipping = order.amount - productTotal;
+      if (shipping > 0) {
+        lineItems.push({
+          orderDate: order.orderDate,
+          name: `送料（${order.shippingCompany || "配送"}）`,
+          recipient: order.recipientName || order.customerName,
+          quantity: 1,
+          unitPrice: shipping,
+          amount: shipping,
+          isShipping: true,
+          isCoolDelivery: order.isCoolDelivery,
+        });
+      }
     }
   }
   return lineItems;
