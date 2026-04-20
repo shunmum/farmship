@@ -17,7 +17,7 @@ export function usePostalCode() {
     }
     setLooking(true);
     try {
-      const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`);
+      const res = await fetch(`/api/zipcode?zipcode=${digits}`);
       const json = await res.json();
       if (json.results && json.results[0]) {
         const r = json.results[0];
