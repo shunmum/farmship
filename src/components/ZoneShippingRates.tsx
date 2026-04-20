@@ -224,59 +224,118 @@ const ZoneShippingRates = () => {
                   このゾーンの料金が未設定です
                 </div>
               ) : (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr className="text-left text-sm">
-                        <th className="p-3 font-medium">配送業者</th>
-                        <th className="p-3 font-medium">サイズ</th>
-                        <th className="p-3 font-medium">基本料金</th>
-                        <th className="p-3 font-medium">クール便追加料金</th>
-                        <th className="p-3 font-medium">合計（クール便）</th>
-                        <th className="p-3 font-medium">アクション</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {zoneRatesList
-                        .sort((a, b) => {
-                          if (a.carrier !== b.carrier) {
-                            return a.carrier.localeCompare(b.carrier);
-                          }
-                          return parseInt(a.size) - parseInt(b.size);
-                        })
-                        .map((rate) => (
-                          <tr key={rate.id} className="border-t text-sm hover:bg-muted/30">
-                            <td className="p-3">{carrierNames[rate.carrier]}</td>
-                            <td className="p-3 font-medium">{rate.size}サイズ</td>
-                            <td className="p-3">¥{rate.basePrice.toLocaleString()}</td>
-                            <td className="p-3">¥{rate.coolPrice.toLocaleString()}</td>
-                            <td className="p-3 font-semibold text-primary">
-                              ¥{(rate.basePrice + rate.coolPrice).toLocaleString()}
-                            </td>
-                            <td className="p-3">
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditingRate(rate)}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive"
-                                  onClick={() => handleDeleteRate(rate.id)}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                <>
+                  {/* ============================================
+                      モバイル表示: カードレイアウト
+                  ============================================ */}
+                  <div className="md:hidden space-y-2">
+                    {zoneRatesList
+                      .sort((a, b) => {
+                        if (a.carrier !== b.carrier) return a.carrier.localeCompare(b.carrier);
+                        return parseInt(a.size) - parseInt(b.size);
+                      })
+                      .map((rate) => (
+                        <div key={rate.id} className="border rounded-lg p-3 bg-background">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm">{carrierNames[rate.carrier]}</span>
+                                <span className="text-xs bg-muted px-2 py-0.5 rounded-full font-medium">
+                                  {rate.size}サイズ
+                                </span>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-muted-foreground mt-1">
+                                <span>基本料金</span>
+                                <span className="text-right tabular-nums text-foreground">
+                                  ¥{rate.basePrice.toLocaleString()}
+                                </span>
+                                <span>クール便追加</span>
+                                <span className="text-right tabular-nums text-foreground">
+                                  ¥{rate.coolPrice.toLocaleString()}
+                                </span>
+                                <span className="font-medium text-foreground">クール便合計</span>
+                                <span className="text-right tabular-nums font-semibold text-primary">
+                                  ¥{(rate.basePrice + rate.coolPrice).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingRate(rate)}
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                onClick={() => handleDeleteRate(rate.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* ============================================
+                      PC表示: テーブルレイアウト
+                  ============================================ */}
+                  <div className="hidden md:block border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-muted/50">
+                        <tr className="text-left text-sm">
+                          <th className="p-3 font-medium">配送業者</th>
+                          <th className="p-3 font-medium">サイズ</th>
+                          <th className="p-3 font-medium">基本料金</th>
+                          <th className="p-3 font-medium">クール便追加料金</th>
+                          <th className="p-3 font-medium">合計（クール便）</th>
+                          <th className="p-3 font-medium">アクション</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {zoneRatesList
+                          .sort((a, b) => {
+                            if (a.carrier !== b.carrier) return a.carrier.localeCompare(b.carrier);
+                            return parseInt(a.size) - parseInt(b.size);
+                          })
+                          .map((rate) => (
+                            <tr key={rate.id} className="border-t text-sm hover:bg-muted/30">
+                              <td className="p-3">{carrierNames[rate.carrier]}</td>
+                              <td className="p-3 font-medium">{rate.size}サイズ</td>
+                              <td className="p-3">¥{rate.basePrice.toLocaleString()}</td>
+                              <td className="p-3">¥{rate.coolPrice.toLocaleString()}</td>
+                              <td className="p-3 font-semibold text-primary">
+                                ¥{(rate.basePrice + rate.coolPrice).toLocaleString()}
+                              </td>
+                              <td className="p-3">
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingRate(rate)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive"
+                                    onClick={() => handleDeleteRate(rate.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           );

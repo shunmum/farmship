@@ -6,7 +6,7 @@ import {
   MOCK_PRODUCT_VARIANTS,
   type Order,
 } from "@/data/mockData";
-import type { Customer, Recipient, Product, ProductVariant } from "@/types";
+import type { Customer, Product, ProductVariant } from "@/types";
 
 interface MockDataContextType {
   customers: Customer[];
@@ -55,8 +55,6 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
   const addOrder = (order: Omit<Order, "id">) => {
     const newOrder: Order = { ...order, id: `O${Date.now()}` };
     setOrders((prev) => [newOrder, ...prev]);
-
-    // 顧客の購入情報を更新
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id === order.customerId) {

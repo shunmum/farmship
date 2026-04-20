@@ -15,6 +15,7 @@ import PublicFormSettings from "@/components/PublicFormSettings";
 import ProductManagement from "@/components/ProductManagement";
 import ShippingModeSettings from "@/components/ShippingModeSettings";
 import AreaShippingRatesTable from "@/components/AreaShippingRatesTable";
+import { PostalCodeInput } from "@/components/PostalCodeInput";
 import {
   Dialog,
   DialogContent,
@@ -96,14 +97,12 @@ const SettingsPage = () => {
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>郵便番号</Label>
-                    <Input
-                      value={farmForm.postalCode}
-                      onChange={(e) => setFarmForm({ ...farmForm, postalCode: e.target.value })}
-                      placeholder="例: 000-0000"
-                    />
-                  </div>
+                  <PostalCodeInput
+                    value={farmForm.postalCode}
+                    onChange={(v) => setFarmForm({ ...farmForm, postalCode: v })}
+                    onAddressFill={(address) => setFarmForm((prev) => ({ ...prev, address }))}
+                    placeholder="例: 000-0000"
+                  />
                   <div className="space-y-2">
                     <Label>電話番号</Label>
                     <Input

@@ -45,9 +45,9 @@ import {
   Package,
   Send,
 } from "lucide-react";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useMockData } from "@/contexts/MockDataContext";
 import { useToast } from "@/hooks/use-toast";
-import { usePostalCode } from "@/hooks/usePostalCode";
+import { PostalCodeInput } from "@/components/PostalCodeInput";
 import type { Customer, Recipient, InvoiceType } from "@/types";
 
 const INVOICE_TYPES: InvoiceType[] = ["箱に入れる", "郵送する", "メールで送る"];
@@ -97,10 +97,8 @@ function FormField({
 }
 
 const CustomersPage = () => {
-  const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const { customers, addCustomer, updateCustomer, deleteCustomer } = useMockData();
   const { toast } = useToast();
-  const { suggestion: postalSuggestion, lookup: lookupPostal, clear: clearPostal } = usePostalCode();
-  const { suggestion: recipientPostalSuggestion, lookup: lookupRecipientPostal, clear: clearRecipientPostal } = usePostalCode();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -143,60 +141,84 @@ const CustomersPage = () => {
   };
 
   // --- 送り主操作 ---
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     const { invoiceType, ...rest } = newCustomer;
-    addCustomer({ ...rest, invoiceType: invoiceType || undefined });
-    setNewCustomer(EMPTY_CUSTOMER);
-    setShowAddCustomer(false);
-    toast({ title: "✅ 送り主を追加しました" });
+    try {
+      await addCustomer({ ...rest, invoiceType: invoiceType || undefined });
+      setNewCustomer(EMPTY_CUSTOMER);
+      setShowAddCustomer(false);
+      toast({ title: "✅ 送り主を追加しました" });
+    } catch {
+      toast({ title: "❌ 追加に失敗しました", variant: "destructive" });
+    }
   };
 
-  const handleUpdateCustomer = () => {
+  const handleUpdateCustomer = async () => {
     if (!editingCustomer) return;
-    updateCustomer(editingCustomer.id, editingCustomer);
-    setEditingCustomer(null);
-    toast({ title: "✅ 顧客情報を更新しました" });
+    try {
+      await updateCustomer(editingCustomer.id, editingCustomer);
+      setEditingCustomer(null);
+      toast({ title: "✅ 顧客情報を更新しました" });
+    } catch {
+      toast({ title: "❌ 更新に失敗しました", variant: "destructive" });
+    }
   };
 
-  const handleDeleteCustomer = () => {
+  const handleDeleteCustomer = async () => {
     if (!deletingCustomerId) return;
-    deleteCustomer(deletingCustomerId);
-    setDeletingCustomerId(null);
-    toast({ title: "✅ 削除しました" });
+    try {
+      await deleteCustomer(deletingCustomerId);
+      setDeletingCustomerId(null);
+      toast({ title: "✅ 削除しました" });
+    } catch {
+      toast({ title: "❌ 削除に失敗しました", variant: "destructive" });
+    }
   };
 
   // --- 送り先操作 ---
-  const handleAddRecipient = () => {
+  const handleAddRecipient = async () => {
     const customer = customers.find((c) => c.id === addRecipientForId);
     if (!customer) return;
     const updated: Recipient[] = [
       ...(customer.recipients || []),
       { ...newRecipient, id: `R${Date.now()}`, customerId: addRecipientForId },
     ];
-    updateCustomer(addRecipientForId, { recipients: updated });
-    setNewRecipient(EMPTY_RECIPIENT);
-    setShowAddRecipient(false);
-    toast({ title: "✅ 送り先を追加しました" });
+    try {
+      await updateCustomer(addRecipientForId, { recipients: updated });
+      setNewRecipient(EMPTY_RECIPIENT);
+      setShowAddRecipient(false);
+      toast({ title: "✅ 送り先を追加しました" });
+    } catch {
+      toast({ title: "❌ 送り先の追加に失敗しました", variant: "destructive" });
+    }
   };
 
-  const handleUpdateRecipient = () => {
+  const handleUpdateRecipient = async () => {
     if (!editingRecipient) return;
     const customer = customers.find((c) => c.id === editingRecipient.customerId);
     if (!customer) return;
     const updated = (customer.recipients || []).map((r) =>
       r.id === editingRecipient.recipient.id ? editingRecipient.recipient : r
     );
-    updateCustomer(editingRecipient.customerId, { recipients: updated });
-    setEditingRecipient(null);
-    toast({ title: "✅ 送り先を更新しました" });
+    try {
+      await updateCustomer(editingRecipient.customerId, { recipients: updated });
+      setEditingRecipient(null);
+      toast({ title: "✅ 送り先を更新しました" });
+    } catch {
+      toast({ title: "❌ 送り先の更新に失敗しました", variant: "destructive" });
+    }
   };
 
-  const handleDeleteRecipient = (customerId: string, recipientId: string) => {
+  const handleDeleteRecipient = async (customerId: string, recipientId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     if (!customer) return;
     const updated = (customer.recipients || []).filter((r) => r.id !== recipientId);
-    updateCustomer(customerId, { recipients: updated });
-    toast({ title: "✅ 送り先を削除しました" });
+    try {
+      await updateCustomer(customerId, { recipients: updated });
+      toast({ title: "✅ 送り先を削除しました" });
+    } catch {
+      toast({ title: "❌ 送り先の削除に失敗しました", variant: "destructive" });
+    }
   };
 
   return (
@@ -578,29 +600,12 @@ const CustomersPage = () => {
               placeholder="例: tanaka@example.com"
               type="email"
             />
-            <div className="grid gap-1.5">
-              <Label>郵便番号</Label>
-              <Input
-                value={newCustomer.postalCode}
-                onChange={(e) => {
-                  setNewCustomer({ ...newCustomer, postalCode: e.target.value });
-                  lookupPostal(e.target.value);
-                }}
-                placeholder="例: 150-0001"
-              />
-              {postalSuggestion && (
-                <button
-                  type="button"
-                  className="text-left text-sm px-3 py-2 rounded-md border border-[#2d6a4f] bg-[#2d6a4f]/5 text-[#2d6a4f] hover:bg-[#2d6a4f]/10 transition-colors"
-                  onClick={() => {
-                    setNewCustomer({ ...newCustomer, address: postalSuggestion.address });
-                    clearPostal();
-                  }}
-                >
-                  ✓ {postalSuggestion.address}　を使用する
-                </button>
-              )}
-            </div>
+            <PostalCodeInput
+              value={newCustomer.postalCode}
+              onChange={(v) => setNewCustomer({ ...newCustomer, postalCode: v })}
+              onAddressFill={(address) => setNewCustomer((prev) => ({ ...prev, address }))}
+              placeholder="例: 150-0001"
+            />
             <FormField
               label="住所"
               value={newCustomer.address}
@@ -653,7 +658,11 @@ const CustomersPage = () => {
               <FormField label="氏名" value={editingCustomer.name} onChange={(v) => setEditingCustomer({ ...editingCustomer, name: v })} />
               <FormField label="電話番号" value={editingCustomer.phone} onChange={(v) => setEditingCustomer({ ...editingCustomer, phone: v })} />
               <FormField label="メールアドレス" value={editingCustomer.email} onChange={(v) => setEditingCustomer({ ...editingCustomer, email: v })} type="email" />
-              <FormField label="郵便番号" value={editingCustomer.postalCode || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, postalCode: v })} />
+              <PostalCodeInput
+                value={editingCustomer.postalCode || ""}
+                onChange={(v) => setEditingCustomer({ ...editingCustomer, postalCode: v })}
+                onAddressFill={(address) => setEditingCustomer((prev) => prev ? { ...prev, address } : prev)}
+              />
               <FormField label="住所" value={editingCustomer.address || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, address: v })} />
               <div className="grid gap-1.5">
                 <Label>請求書種別</Label>
@@ -708,29 +717,13 @@ const CustomersPage = () => {
           <div className="grid gap-4 py-4">
             <FormField label="氏名 *" value={newRecipient.name} onChange={(v) => setNewRecipient({ ...newRecipient, name: v })} placeholder="例: 田中 花子" />
             <FormField label="続柄・関係" value={newRecipient.relation} onChange={(v) => setNewRecipient({ ...newRecipient, relation: v })} placeholder="例: 娘、友人" />
-            <div className="grid gap-1.5">
-              <Label>郵便番号 *</Label>
-              <Input
-                value={newRecipient.postalCode}
-                onChange={(e) => {
-                  setNewRecipient({ ...newRecipient, postalCode: e.target.value });
-                  lookupRecipientPostal(e.target.value);
-                }}
-                placeholder="例: 150-0043"
-              />
-              {recipientPostalSuggestion && (
-                <button
-                  type="button"
-                  className="text-left text-sm px-3 py-2 rounded-md border border-[#2d6a4f] bg-[#2d6a4f]/5 text-[#2d6a4f] hover:bg-[#2d6a4f]/10 transition-colors"
-                  onClick={() => {
-                    setNewRecipient({ ...newRecipient, address: recipientPostalSuggestion.address });
-                    clearRecipientPostal();
-                  }}
-                >
-                  ✓ {recipientPostalSuggestion.address}　を使用する
-                </button>
-              )}
-            </div>
+            <PostalCodeInput
+              label="郵便番号 *"
+              value={newRecipient.postalCode}
+              onChange={(v) => setNewRecipient({ ...newRecipient, postalCode: v })}
+              onAddressFill={(address) => setNewRecipient((prev) => ({ ...prev, address }))}
+              placeholder="例: 150-0043"
+            />
             <FormField label="住所 *" value={newRecipient.address} onChange={(v) => setNewRecipient({ ...newRecipient, address: v })} placeholder="例: 東京都渋谷区道玄坂2-1-1" />
             <FormField label="電話番号 *" value={newRecipient.phone} onChange={(v) => setNewRecipient({ ...newRecipient, phone: v })} placeholder="例: 03-1111-2222" />
             <FormField label="メールアドレス" value={newRecipient.email} onChange={(v) => setNewRecipient({ ...newRecipient, email: v })} placeholder="例: hanako@example.com" type="email" />
@@ -768,10 +761,11 @@ const CustomersPage = () => {
                 value={editingRecipient.recipient.relation || ""}
                 onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, relation: v } })}
               />
-              <FormField
+              <PostalCodeInput
                 label="郵便番号 *"
                 value={editingRecipient.recipient.postalCode}
                 onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, postalCode: v } })}
+                onAddressFill={(address) => setEditingRecipient((prev) => prev ? { ...prev, recipient: { ...prev.recipient, address } } : prev)}
               />
               <FormField
                 label="住所 *"

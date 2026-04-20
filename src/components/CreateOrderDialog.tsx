@@ -17,6 +17,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useOrders } from "@/hooks/useOrders";
 import { useProducts } from "@/hooks/useProducts";
 import { useAreaShipping } from "@/hooks/useAreaShipping";
+import { lookupZipcode } from "@/hooks/useZipcode";
 import type { Recipient, InvoiceType } from "@/types";
 import type { OrderCategory } from "@/hooks/useOrders";
 
@@ -196,24 +197,28 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setOrderNote("");
   };
 
-  const handleAddNewCustomer = () => {
+  const handleAddNewCustomer = async () => {
     if (!newCustomer.name || !newCustomer.phone) return;
-    const newId = addCustomer({
-      name: newCustomer.name,
-      phone: newCustomer.phone,
-      email: newCustomer.email,
-      postalCode: newCustomer.postalCode,
-      address: newCustomer.address,
-      memo: newCustomer.memo,
-    });
-    setSelectedCustomerId(newId);
-    setInvoiceType("");
-    toast({ title: "✅ 顧客を登録しました", description: newCustomer.name });
-    setShowNewCustomerForm(false);
-    setNewCustomer({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+    try {
+      const newId = await addCustomer({
+        name: newCustomer.name,
+        phone: newCustomer.phone,
+        email: newCustomer.email,
+        postalCode: newCustomer.postalCode,
+        address: newCustomer.address,
+        memo: newCustomer.memo,
+      });
+      setSelectedCustomerId(newId);
+      setInvoiceType("");
+      toast({ title: "✅ 顧客を登録しました", description: newCustomer.name });
+      setShowNewCustomerForm(false);
+      setNewCustomer({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+    } catch (err) {
+      toast({ title: "❌ 顧客の登録に失敗しました", variant: "destructive" });
+    }
   };
 
-  const handleAddNewRecipient = () => {
+  const handleAddNewRecipient = async () => {
     if (!newRecipient.name || !newRecipient.phone || !selectedCustomer) return;
     const newId = `R${Date.now()}`;
     const recipient = {
@@ -226,13 +231,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       relation: newRecipient.relation || undefined,
       email: newRecipient.email || undefined,
     };
-    updateCustomer(selectedCustomer.id, {
-      recipients: [...(selectedCustomer.recipients || []), recipient],
-    });
-    setSelectedRecipientId(newId);
-    toast({ title: "✅ 送り先を登録しました", description: newRecipient.name });
-    setShowNewRecipientForm(false);
-    setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+    try {
+      await updateCustomer(selectedCustomer.id, {
+        recipients: [...(selectedCustomer.recipients || []), recipient],
+      });
+      setSelectedRecipientId(newId);
+      toast({ title: "✅ 送り先を登録しました", description: newRecipient.name });
+      setShowNewRecipientForm(false);
+      setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+    } catch (err) {
+      toast({ title: "❌ 送り先の登録に失敗しました", variant: "destructive" });
+    }
   };
 
   // 同じ顧客で続けて入力（送り先・商品・配送情報をリセット）
@@ -351,11 +360,20 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">郵便番号</Label>
-                <Input
-                  placeholder="000-0000"
-                  value={newCustomer.postalCode}
-                  onChange={(e) => setNewCustomer((p) => ({ ...p, postalCode: e.target.value }))}
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="000-0000"
+                    value={newCustomer.postalCode}
+                    maxLength={8}
+                    className="pr-7"
+                    onChange={async (e) => {
+                      const zip = e.target.value;
+                      setNewCustomer((p) => ({ ...p, postalCode: zip }));
+                      const address = await lookupZipcode(zip);
+                      if (address) setNewCustomer((p) => ({ ...p, address }));
+                    }}
+                  />
+                </div>
               </div>
               <div className="col-span-2 space-y-1">
                 <Label className="text-xs">住所</Label>
@@ -478,11 +496,20 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">郵便番号</Label>
-                <Input
-                  placeholder="000-0000"
-                  value={newRecipient.postalCode}
-                  onChange={(e) => setNewRecipient((p) => ({ ...p, postalCode: e.target.value }))}
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="000-0000"
+                    value={newRecipient.postalCode}
+                    maxLength={8}
+                    className="pr-7"
+                    onChange={async (e) => {
+                      const zip = e.target.value;
+                      setNewRecipient((p) => ({ ...p, postalCode: zip }));
+                      const address = await lookupZipcode(zip);
+                      if (address) setNewRecipient((p) => ({ ...p, address }));
+                    }}
+                  />
+                </div>
               </div>
               <div className="col-span-2 space-y-1">
                 <Label className="text-xs">住所</Label>
