@@ -97,7 +97,7 @@ function FormField({
 }
 
 const CustomersPage = () => {
-  const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const { customers, addCustomer, updateCustomer, deleteCustomer, addRecipient, updateRecipient, deleteRecipient } = useCustomers();
   const { toast } = useToast();
   const { lookup: lookupPostal } = usePostalCode();
   const { lookup: lookupRecipientPostal } = usePostalCode();
@@ -166,36 +166,35 @@ const CustomersPage = () => {
   };
 
   // --- 送り先操作 ---
-  const handleAddRecipient = () => {
-    const customer = customers.find((c) => c.id === addRecipientForId);
-    if (!customer) return;
-    const updated: Recipient[] = [
-      ...(customer.recipients || []),
-      { ...newRecipient, id: `R${Date.now()}`, customerId: addRecipientForId },
-    ];
-    updateCustomer(addRecipientForId, { recipients: updated });
+  const handleAddRecipient = async () => {
+    if (!addRecipientForId) return;
+    const { error } = await addRecipient({ ...newRecipient, customerId: addRecipientForId });
+    if (error) {
+      toast({ title: "❌ 送り先の追加に失敗しました", variant: "destructive" });
+      return;
+    }
     setNewRecipient(EMPTY_RECIPIENT);
     setShowAddRecipient(false);
     toast({ title: "✅ 送り先を追加しました" });
   };
 
-  const handleUpdateRecipient = () => {
+  const handleUpdateRecipient = async () => {
     if (!editingRecipient) return;
-    const customer = customers.find((c) => c.id === editingRecipient.customerId);
-    if (!customer) return;
-    const updated = (customer.recipients || []).map((r) =>
-      r.id === editingRecipient.recipient.id ? editingRecipient.recipient : r
-    );
-    updateCustomer(editingRecipient.customerId, { recipients: updated });
+    const { error } = await updateRecipient(editingRecipient.recipient.id, editingRecipient.recipient);
+    if (error) {
+      toast({ title: "❌ 送り先の更新に失敗しました", variant: "destructive" });
+      return;
+    }
     setEditingRecipient(null);
     toast({ title: "✅ 送り先を更新しました" });
   };
 
-  const handleDeleteRecipient = (customerId: string, recipientId: string) => {
-    const customer = customers.find((c) => c.id === customerId);
-    if (!customer) return;
-    const updated = (customer.recipients || []).filter((r) => r.id !== recipientId);
-    updateCustomer(customerId, { recipients: updated });
+  const handleDeleteRecipient = async (_customerId: string, recipientId: string) => {
+    const { error } = await deleteRecipient(recipientId);
+    if (error) {
+      toast({ title: "❌ 送り先の削除に失敗しました", variant: "destructive" });
+      return;
+    }
     toast({ title: "✅ 送り先を削除しました" });
   };
 
