@@ -99,8 +99,8 @@ function FormField({
 const CustomersPage = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { toast } = useToast();
-  const { suggestion: postalSuggestion, lookup: lookupPostal, clear: clearPostal } = usePostalCode();
-  const { suggestion: recipientPostalSuggestion, lookup: lookupRecipientPostal, clear: clearRecipientPostal } = usePostalCode();
+  const { lookup: lookupPostal } = usePostalCode();
+  const { lookup: lookupRecipientPostal } = usePostalCode();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -583,23 +583,14 @@ const CustomersPage = () => {
               <Input
                 value={newCustomer.postalCode}
                 onChange={(e) => {
-                  setNewCustomer({ ...newCustomer, postalCode: e.target.value });
-                  lookupPostal(e.target.value);
+                  const val = e.target.value;
+                  setNewCustomer((prev) => ({ ...prev, postalCode: val }));
+                  lookupPostal(val).then((result) => {
+                    if (result) setNewCustomer((prev) => ({ ...prev, address: result.address }));
+                  });
                 }}
                 placeholder="例: 150-0001"
               />
-              {postalSuggestion && (
-                <button
-                  type="button"
-                  className="text-left text-sm px-3 py-2 rounded-md border border-[#2d6a4f] bg-[#2d6a4f]/5 text-[#2d6a4f] hover:bg-[#2d6a4f]/10 transition-colors"
-                  onClick={() => {
-                    setNewCustomer({ ...newCustomer, address: postalSuggestion.address });
-                    clearPostal();
-                  }}
-                >
-                  ✓ {postalSuggestion.address}　を使用する
-                </button>
-              )}
             </div>
             <FormField
               label="住所"
@@ -713,23 +704,14 @@ const CustomersPage = () => {
               <Input
                 value={newRecipient.postalCode}
                 onChange={(e) => {
-                  setNewRecipient({ ...newRecipient, postalCode: e.target.value });
-                  lookupRecipientPostal(e.target.value);
+                  const val = e.target.value;
+                  setNewRecipient((prev) => ({ ...prev, postalCode: val }));
+                  lookupRecipientPostal(val).then((result) => {
+                    if (result) setNewRecipient((prev) => ({ ...prev, address: result.address }));
+                  });
                 }}
                 placeholder="例: 150-0043"
               />
-              {recipientPostalSuggestion && (
-                <button
-                  type="button"
-                  className="text-left text-sm px-3 py-2 rounded-md border border-[#2d6a4f] bg-[#2d6a4f]/5 text-[#2d6a4f] hover:bg-[#2d6a4f]/10 transition-colors"
-                  onClick={() => {
-                    setNewRecipient({ ...newRecipient, address: recipientPostalSuggestion.address });
-                    clearRecipientPostal();
-                  }}
-                >
-                  ✓ {recipientPostalSuggestion.address}　を使用する
-                </button>
-              )}
             </div>
             <FormField label="住所 *" value={newRecipient.address} onChange={(v) => setNewRecipient({ ...newRecipient, address: v })} placeholder="例: 東京都渋谷区道玄坂2-1-1" />
             <FormField label="電話番号 *" value={newRecipient.phone} onChange={(v) => setNewRecipient({ ...newRecipient, phone: v })} placeholder="例: 03-1111-2222" />

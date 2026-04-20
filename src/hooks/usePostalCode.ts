@@ -9,11 +9,11 @@ export function usePostalCode() {
   const [suggestion, setSuggestion] = useState<PostalResult | null>(null);
   const [looking, setLooking] = useState(false);
 
-  const lookup = useCallback(async (postalCode: string) => {
+  const lookup = useCallback(async (postalCode: string): Promise<PostalResult | null> => {
     const digits = postalCode.replace(/[^0-9]/g, "");
     if (digits.length !== 7) {
       setSuggestion(null);
-      return;
+      return null;
     }
     setLooking(true);
     try {
@@ -22,12 +22,16 @@ export function usePostalCode() {
       if (json.results && json.results[0]) {
         const r = json.results[0];
         const address = `${r.address1}${r.address2}${r.address3}`;
-        setSuggestion({ address, prefecture: r.address1 });
+        const result = { address, prefecture: r.address1 };
+        setSuggestion(result);
+        return result;
       } else {
         setSuggestion(null);
+        return null;
       }
     } catch {
       setSuggestion(null);
+      return null;
     } finally {
       setLooking(false);
     }
