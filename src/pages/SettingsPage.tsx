@@ -74,9 +74,7 @@ const SettingsPage = () => {
             <TabsTrigger value="basic">基本情報</TabsTrigger>
             <TabsTrigger value="invoice-settings">請求書設定</TabsTrigger>
             <TabsTrigger value="products">商品マスター</TabsTrigger>
-            <TabsTrigger value="shipping-mode">送料計算方式</TabsTrigger>
             <TabsTrigger value="shipping">配送料金</TabsTrigger>
-            <TabsTrigger value="consolidation">荷合いルール</TabsTrigger>
             <TabsTrigger value="public-form">公開フォーム</TabsTrigger>
             <TabsTrigger value="print">印刷設定</TabsTrigger>
             <TabsTrigger value="notify">通知設定</TabsTrigger>

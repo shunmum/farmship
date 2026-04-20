@@ -39,7 +39,7 @@ const LoginPage = () => {
               <Package className="h-10 w-10 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">農作物販売管理</CardTitle>
+          <CardTitle className="text-2xl text-center">FarmShip</CardTitle>
           <CardDescription className="text-center">
             アカウントにログインしてください
           </CardDescription>

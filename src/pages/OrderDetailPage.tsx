@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useOrders } from "@/hooks/useOrders";
-import { useMockData } from "@/contexts/MockDataContext";
+import { useCustomers } from "@/hooks/useCustomers";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -27,7 +27,7 @@ const OrderDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { orders, updateOrder } = useOrders();
-  const { customers } = useMockData();
+  const { customers } = useCustomers();
   const { toast } = useToast();
 
   const order = orders.find((o) => o.id === id);

@@ -12,11 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMockData } from "@/contexts/MockDataContext";
+import { useCustomers } from "@/hooks/useCustomers";
 import Papa from "papaparse";
 import { useToast } from "@/hooks/use-toast";
 import { CreateOrderDialog } from "@/components/CreateOrderDialog";
-import type { OrderCategory } from "@/data/mockData";
+import type { OrderCategory } from "@/hooks/useOrders";
 import type { InvoiceType } from "@/types";
 
 const ORDER_CATEGORIES: OrderCategory[] = ["のし", "お中元", "お供え", "なし"];
@@ -53,12 +53,46 @@ const getCategoryBadge = (category?: OrderCategory) => {
 const OrdersPage = () => {
   const navigate = useNavigate();
   const { orders, updateOrder, refetch } = useOrders();
-  const { customers } = useMockData();
+  const { customers } = useCustomers();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState("全て");
   const [paymentFilter, setPaymentFilter] = useState("全て");
   const [categoryFilter, setCategoryFilter] = useState("全て");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const printOrder = (order: typeof orders[0]) => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>注文票 ${order.orderNumber}</title>
+<style>
+  body { font-family: sans-serif; font-size: 13px; padding: 24px; color: #111; }
+  h2 { font-size: 18px; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  th { background: #f3f4f6; width: 120px; }
+  .total { font-weight: bold; font-size: 15px; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+<h2>注文票</h2>
+<table>
+  <tr><th>注文番号</th><td>${order.orderNumber}</td><th>注文日</th><td>${order.orderDate}</td></tr>
+  <tr><th>顧客名</th><td>${order.customerName}</td><th>配送先</th><td>${order.recipientName || order.customerName}</td></tr>
+  <tr><th>配送予定日</th><td>${order.deliveryDate || "—"}</td><th>配送業者</th><td>${order.shippingCompany || "—"}</td></tr>
+  <tr><th>ステータス</th><td>${order.status}</td><th>入金状況</th><td>${order.paymentStatus}</td></tr>
+  ${order.note ? `<tr><th>備考</th><td colspan="3">${order.note}</td></tr>` : ""}
+</table>
+<table>
+  <thead><tr><th>商品名</th><th>数量</th><th>送料</th></tr></thead>
+  <tbody>
+    ${order.products.map((p) => `<tr><td>${p.productName}</td><td>${p.quantity}</td><td>${p.shippingFee ? `¥${p.shippingFee.toLocaleString()}` : "—"}</td></tr>`).join("")}
+  </tbody>
+</table>
+<p class="total">合計金額：¥${order.amount.toLocaleString()}</p>
+<script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
+</body></html>`;
+    win.document.write(html);
+    win.document.close();
+  };
 
   const recipientMap = useMemo(() => {
     const map = new Map<string, { postalCode: string; address: string; phone: string }>();
@@ -386,7 +420,7 @@ const OrdersPage = () => {
                           >
                             詳細
                           </Button>
-                          <Button variant="outline" size="sm" className="btn-hover">
+                          <Button variant="outline" size="sm" className="btn-hover" onClick={() => printOrder(order)}>
                             <Printer className="h-3 w-3" />
                           </Button>
                         </div>
@@ -468,7 +502,7 @@ const OrdersPage = () => {
                       >
                         詳細
                       </Button>
-                      <Button variant="outline" size="default" className="btn-hover h-11 px-4">
+                      <Button variant="outline" size="default" className="btn-hover h-11 px-4" onClick={() => printOrder(order)}>
                         <Printer className="h-4 w-4" />
                       </Button>
                     </div>

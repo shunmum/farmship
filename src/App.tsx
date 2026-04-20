@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { MockDataProvider } from "./contexts/MockDataContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { AppSidebar } from "./components/AppSidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOrderPage from "./pages/PublicOrderPage";
@@ -19,19 +19,23 @@ import WorkLogManualPage from "./pages/WorkLogManualPage";
 import WorkLogChatPage from "./pages/WorkLogChatPage";
 import WorkLogListPage from "./pages/WorkLogListPage";
 import WorkLogDetailPage from "./pages/WorkLogDetailPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <MockDataProvider>
+    <AuthProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
         <Routes>
           <Route path="/order/:slug" element={<PublicOrderPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route
             path="/*"
             element={
@@ -62,7 +66,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-    </MockDataProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

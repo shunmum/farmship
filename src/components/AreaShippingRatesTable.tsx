@@ -20,26 +20,33 @@ const AreaShippingRatesTable = () => {
           <div className="px-4 sm:px-6 pt-4 pb-2">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">通常配送</h3>
           </div>
-          <table className="w-full text-sm border-collapse min-w-[640px]">
+          <table className="w-full text-sm border-collapse table-fixed">
+            <colgroup>
+              <col className="w-[100px]" />
+              {rates.map((area) => <col key={area.areaId} />)}
+              <col className="w-3" />
+            </colgroup>
             <thead>
               <tr className="bg-[#2d6a4f] text-white">
-                <th className="py-2.5 px-3 text-left font-medium">重量区分</th>
+                <th className="py-2.5 px-2 text-left font-medium text-xs">重量区分</th>
                 {rates.map((area) => (
-                  <th key={area.areaId} className="py-2.5 px-3 text-right font-medium whitespace-nowrap">
+                  <th key={area.areaId} className="py-2.5 px-2 text-right font-medium text-xs whitespace-nowrap">
                     {area.areaName.replace("エリア", "").replace("・", "\n・")}
                   </th>
                 ))}
+                <th className="bg-[#2d6a4f]" />
               </tr>
             </thead>
             <tbody>
               {WEIGHT_TIERS.map((tier, i) => (
                 <tr key={tier.label} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="py-2 px-3 font-medium text-gray-700 border-b border-gray-100">{tier.label}</td>
+                  <td className="py-2 px-2 font-medium text-gray-700 border-b border-gray-100 text-xs">{tier.label}</td>
                   {rates.map((area) => (
-                    <td key={area.areaId} className="py-2 px-3 text-right border-b border-gray-100 tabular-nums">
+                    <td key={area.areaId} className="py-2 px-2 text-right border-b border-gray-100 tabular-nums text-xs">
                       {fmt(area.normalRates[i])}
                     </td>
                   ))}
+                  <td className="border-b border-gray-100" />
                 </tr>
               ))}
             </tbody>
@@ -49,26 +56,33 @@ const AreaShippingRatesTable = () => {
           <div className="px-4 sm:px-6 pt-6 pb-2">
             <h3 className="text-sm font-semibold text-blue-700 mb-3">クール便</h3>
           </div>
-          <table className="w-full text-sm border-collapse min-w-[640px]">
+          <table className="w-full text-sm border-collapse table-fixed">
+            <colgroup>
+              <col className="w-[100px]" />
+              {rates.map((area) => <col key={area.areaId} />)}
+              <col className="w-3" />
+            </colgroup>
             <thead>
               <tr className="bg-blue-600 text-white">
-                <th className="py-2.5 px-3 text-left font-medium">重量区分</th>
+                <th className="py-2.5 px-2 text-left font-medium text-xs">重量区分</th>
                 {rates.map((area) => (
-                  <th key={area.areaId} className="py-2.5 px-3 text-right font-medium whitespace-nowrap">
+                  <th key={area.areaId} className="py-2.5 px-2 text-right font-medium text-xs whitespace-nowrap">
                     {area.areaName.replace("エリア", "").replace("・", "\n・")}
                   </th>
                 ))}
+                <th className="bg-blue-600" />
               </tr>
             </thead>
             <tbody>
               {WEIGHT_TIERS.map((tier, i) => (
                 <tr key={tier.label} className={i % 2 === 0 ? "bg-white" : "bg-blue-50/40"}>
-                  <td className="py-2 px-3 font-medium text-gray-700 border-b border-gray-100">{tier.label}</td>
+                  <td className="py-2 px-2 font-medium text-gray-700 border-b border-gray-100 text-xs">{tier.label}</td>
                   {rates.map((area) => (
-                    <td key={area.areaId} className="py-2 px-3 text-right border-b border-gray-100 tabular-nums text-blue-700">
+                    <td key={area.areaId} className="py-2 px-2 text-right border-b border-gray-100 tabular-nums text-xs text-blue-700">
                       {fmt(area.coolRates[i])}
                     </td>
                   ))}
+                  <td className="border-b border-gray-100" />
                 </tr>
               ))}
             </tbody>

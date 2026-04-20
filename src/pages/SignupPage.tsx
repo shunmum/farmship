@@ -36,7 +36,7 @@ const SignupPage = () => {
     const { error } = await signUp(email, password);
 
     if (error) {
-      setError("登録に失敗しました。別のメールアドレスをお試しください");
+      setError(error.message || "登録に失敗しました");
       setLoading(false);
     } else {
       setSuccess(true);

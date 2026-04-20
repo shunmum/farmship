@@ -45,8 +45,9 @@ import {
   Package,
   Send,
 } from "lucide-react";
-import { useMockData } from "@/contexts/MockDataContext";
+import { useCustomers } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
+import { usePostalCode } from "@/hooks/usePostalCode";
 import type { Customer, Recipient, InvoiceType } from "@/types";
 
 const INVOICE_TYPES: InvoiceType[] = ["箱に入れる", "郵送する", "メールで送る"];
@@ -96,8 +97,10 @@ function FormField({
 }
 
 const CustomersPage = () => {
-  const { customers, addCustomer, updateCustomer, deleteCustomer } = useMockData();
+  const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { toast } = useToast();
+  const { suggestion: postalSuggestion, lookup: lookupPostal, clear: clearPostal } = usePostalCode();
+  const { suggestion: recipientPostalSuggestion, lookup: lookupRecipientPostal, clear: clearRecipientPostal } = usePostalCode();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -575,12 +578,29 @@ const CustomersPage = () => {
               placeholder="例: tanaka@example.com"
               type="email"
             />
-            <FormField
-              label="郵便番号"
-              value={newCustomer.postalCode}
-              onChange={(v) => setNewCustomer({ ...newCustomer, postalCode: v })}
-              placeholder="例: 150-0001"
-            />
+            <div className="grid gap-1.5">
+              <Label>郵便番号</Label>
+              <Input
+                value={newCustomer.postalCode}
+                onChange={(e) => {
+                  setNewCustomer({ ...newCustomer, postalCode: e.target.value });
+                  lookupPostal(e.target.value);
+                }}
+                placeholder="例: 150-0001"
+              />
+              {postalSuggestion && (
+                <button
+                  type="button"
+                  className="text-left text-sm px-3 py-2 rounded-md border border-[#2d6a4f] bg-[#2d6a4f]/5 text-[#2d6a4f] hover:bg-[#2d6a4f]/10 transition-colors"
+                  onClick={() => {
+                    setNewCustomer({ ...newCustomer, address: postalSuggestion.address });
+                    clearPostal();
+                  }}
+                >
+                  ✓ {postalSuggestion.address}　を使用する
+                </button>
+              )}
+            </div>
             <FormField
               label="住所"
               value={newCustomer.address}
@@ -688,7 +708,29 @@ const CustomersPage = () => {
           <div className="grid gap-4 py-4">
             <FormField label="氏名 *" value={newRecipient.name} onChange={(v) => setNewRecipient({ ...newRecipient, name: v })} placeholder="例: 田中 花子" />
             <FormField label="続柄・関係" value={newRecipient.relation} onChange={(v) => setNewRecipient({ ...newRecipient, relation: v })} placeholder="例: 娘、友人" />
-            <FormField label="郵便番号 *" value={newRecipient.postalCode} onChange={(v) => setNewRecipient({ ...newRecipient, postalCode: v })} placeholder="例: 150-0043" />
+            <div className="grid gap-1.5">
+              <Label>郵便番号 *</Label>
+              <Input
+                value={newRecipient.postalCode}
+                onChange={(e) => {
+                  setNewRecipient({ ...newRecipient, postalCode: e.target.value });
+                  lookupRecipientPostal(e.target.value);
+                }}
+                placeholder="例: 150-0043"
+              />
+              {recipientPostalSuggestion && (
+                <button
+                  type="button"
+                  className="text-left text-sm px-3 py-2 rounded-md border border-[#2d6a4f] bg-[#2d6a4f]/5 text-[#2d6a4f] hover:bg-[#2d6a4f]/10 transition-colors"
+                  onClick={() => {
+                    setNewRecipient({ ...newRecipient, address: recipientPostalSuggestion.address });
+                    clearRecipientPostal();
+                  }}
+                >
+                  ✓ {recipientPostalSuggestion.address}　を使用する
+                </button>
+              )}
+            </div>
             <FormField label="住所 *" value={newRecipient.address} onChange={(v) => setNewRecipient({ ...newRecipient, address: v })} placeholder="例: 東京都渋谷区道玄坂2-1-1" />
             <FormField label="電話番号 *" value={newRecipient.phone} onChange={(v) => setNewRecipient({ ...newRecipient, phone: v })} placeholder="例: 03-1111-2222" />
             <FormField label="メールアドレス" value={newRecipient.email} onChange={(v) => setNewRecipient({ ...newRecipient, email: v })} placeholder="例: hanako@example.com" type="email" />

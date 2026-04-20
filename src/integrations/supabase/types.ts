@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -20,9 +20,13 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          invoice_type: string | null
+          last_purchase_date: string | null
+          memo: string | null
           name: string
           phone: string
           postal_code: string
+          total_spent: number | null
           updated_at: string
           user_id: string | null
         }
@@ -31,9 +35,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          invoice_type?: string | null
+          last_purchase_date?: string | null
+          memo?: string | null
           name: string
           phone: string
           postal_code: string
+          total_spent?: number | null
           updated_at?: string
           user_id?: string | null
         }
@@ -42,9 +50,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          invoice_type?: string | null
+          last_purchase_date?: string | null
+          memo?: string | null
           name?: string
           phone?: string
           postal_code?: string
+          total_spent?: number | null
           updated_at?: string
           user_id?: string | null
         }
@@ -76,6 +88,195 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          product_variant_id: string | null
+          quantity: number
+          shipping_fee: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          product_variant_id?: string | null
+          quantity?: number
+          shipping_fee?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          product_variant_id?: string | null
+          quantity?: number
+          shipping_fee?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_variant_id_fkey"
+            columns: ["product_variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          customer_name: string
+          delivery_date: string | null
+          id: string
+          is_cool_delivery: boolean
+          note: string | null
+          order_category: string | null
+          order_date: string
+          order_number: string
+          payment_status: string
+          recipient_id: string | null
+          recipient_name: string | null
+          shipping_company: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          delivery_date?: string | null
+          id?: string
+          is_cool_delivery?: boolean
+          note?: string | null
+          order_category?: string | null
+          order_date: string
+          order_number: string
+          payment_status?: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          shipping_company?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          delivery_date?: string | null
+          id?: string
+          is_cool_delivery?: boolean
+          note?: string | null
+          order_category?: string | null
+          order_date?: string
+          order_number?: string
+          payment_status?: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          shipping_company?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          product_id: string
+          size: string | null
+          sku: string | null
+          updated_at: string
+          user_id: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          product_id: string
+          size?: string | null
+          sku?: string | null
+          updated_at?: string
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          product_id?: string
+          size?: string | null
+          sku?: string | null
+          updated_at?: string
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -145,6 +346,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      recipients: {
+        Row: {
+          address: string
+          created_at: string
+          customer_id: string
+          email: string | null
+          id: string
+          name: string
+          phone: string
+          postal_code: string
+          relation: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          customer_id: string
+          email?: string | null
+          id?: string
+          name: string
+          phone: string
+          postal_code: string
+          relation?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          customer_id?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string
+          postal_code?: string
+          relation?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipping_labels: {
         Row: {

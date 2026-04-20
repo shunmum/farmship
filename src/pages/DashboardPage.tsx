@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrders } from "@/hooks/useOrders";
-import { useMockData } from "@/contexts/MockDataContext";
+import { useCustomers } from "@/hooks/useCustomers";
 import { Plus, ShoppingBag, Banknote, AlertCircle, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { CreateOrderDialog } from "@/components/CreateOrderDialog";
-import type { OrderCategory } from "@/data/mockData";
+import type { OrderCategory } from "@/hooks/useOrders";
 import type { InvoiceType } from "@/types";
 
 const getStatusBadge = (status: string) => {
@@ -77,7 +77,7 @@ const getInvoiceBadge = (invoiceType?: InvoiceType) => {
 
 const DashboardPage = () => {
   const { orders } = useOrders();
-  const { customers } = useMockData();
+  const { customers } = useCustomers();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const customerMap = useMemo(() => {

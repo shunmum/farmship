@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Tables } from '@/integrations/supabase/types';
-import { MOCK_PRODUCTS, MOCK_PRODUCT_VARIANTS } from '@/data/mockData';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ProductVariant {
   id: string;
@@ -11,6 +9,7 @@ export interface ProductVariant {
   size: string;
   weight: number;
   sku?: string;
+  isActive?: boolean;
 }
 
 export interface Product {
@@ -22,9 +21,8 @@ export interface Product {
   price?: number;
   size?: string;
   weight?: number;
+  isActive?: boolean;
 }
-
-type ProductRow = Tables<'products'>;
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -37,70 +35,42 @@ export function useProducts() {
       setLoading(true);
       setError(null);
 
-      // 商品マスタを取得
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [{ data: productsData, error: productsError }, { data: variantsData, error: variantsError }] =
+        await Promise.all([
+          supabase.from("products").select("*").order("created_at", { ascending: false }),
+          supabase.from("product_variants").select("*").order("created_at", { ascending: false }),
+        ]);
 
       if (productsError) throw productsError;
+      if (variantsError) throw variantsError;
 
-      if (productsData && productsData.length > 0) {
-        setProducts(
-          productsData.map((p: ProductRow) => ({
-            id: p.id,
-            name: p.name,
-            category: p.category,
-            description: undefined,
-            isParent: false,
-            price: p.price ? Number(p.price) : undefined,
-            size: p.size_cm ? String(p.size_cm) : undefined,
-            weight: p.weight_kg ? Number(p.weight_kg) : undefined,
-          }))
-        );
-        setProductVariants([]);
-      } else {
-        // Supabaseにデータがない場合はモックデータを使用
-        setProducts(MOCK_PRODUCTS.map(p => ({
+      setProducts(
+        (productsData ?? []).map((p) => ({
           id: p.id,
           name: p.name,
           category: p.category,
-          description: p.description,
-          isParent: p.isParent,
-          price: p.price,
-          size: p.size,
-          weight: p.weight,
-        })));
-        setProductVariants(MOCK_PRODUCT_VARIANTS.map(v => ({
+          isParent: (variantsData ?? []).some((v) => v.product_id === p.id),
+          price: p.price ? Number(p.price) : undefined,
+          size: p.size_cm ? String(p.size_cm) : undefined,
+          weight: p.weight_kg ? Number(p.weight_kg) : undefined,
+        }))
+      );
+
+      setProductVariants(
+        (variantsData ?? []).map((v) => ({
           id: v.id,
-          parentProductId: v.parentProductId,
+          parentProductId: v.product_id,
           name: v.name,
-          price: v.price,
-          size: v.size,
-          weight: v.weight / 1000, // g→kg変換
-        })));
-      }
+          price: Number(v.price),
+          size: v.size ?? "",
+          weight: v.weight_kg ? Number(v.weight_kg) : 0,
+          sku: v.sku ?? undefined,
+          isActive: v.is_active ?? true,
+        }))
+      );
     } catch (err) {
-      console.error('Error fetching products:', err);
-      // Supabaseエラー時はモックデータにフォールバック
-      setProducts(MOCK_PRODUCTS.map(p => ({
-        id: p.id,
-        name: p.name,
-        category: p.category,
-        description: p.description,
-        isParent: p.isParent,
-        price: p.price,
-        size: p.size,
-        weight: p.weight,
-      })));
-      setProductVariants(MOCK_PRODUCT_VARIANTS.map(v => ({
-        id: v.id,
-        parentProductId: v.parentProductId,
-        name: v.name,
-        price: v.price,
-        size: v.size,
-        weight: v.weight / 1000,
-      })));
+      console.error("Error fetching products:", err);
+      setError(err instanceof Error ? err.message : "商品データの取得に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -110,83 +80,131 @@ export function useProducts() {
     fetchProducts();
   }, []);
 
-  const addProduct = async (product: Omit<Product, 'id'>) => {
+  const addProduct = async (product: Omit<Product, "id">) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
-        .from('products')
+        .from("products")
         .insert({
+          user_id: user?.id,
           name: product.name,
           category: product.category,
-          price: product.price || 0,
+          price: product.price ?? 0,
           size_cm: product.size ? Number(product.size) : null,
-          weight_kg: product.weight || null,
+          weight_kg: product.weight ?? null,
         })
         .select()
         .single();
 
       if (error) throw error;
-
       await fetchProducts();
       return { data, error: null };
     } catch (err) {
-      console.error('Error adding product:', err);
+      console.error("Error adding product:", err);
       return { data: null, error: err as Error };
     }
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
+      const dbUpdates: Record<string, unknown> = {};
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.category !== undefined) dbUpdates.category = updates.category;
+      if (updates.price !== undefined) dbUpdates.price = updates.price;
+      if (updates.size !== undefined) dbUpdates.size_cm = updates.size ? Number(updates.size) : null;
+      if (updates.weight !== undefined) dbUpdates.weight_kg = updates.weight;
+
       const { data, error } = await supabase
-        .from('products')
-        .update({
-          name: updates.name,
-          category: updates.category,
-          price: updates.price,
-          size_cm: updates.size ? Number(updates.size) : null,
-          weight_kg: updates.weight,
-        })
-        .eq('id', id)
+        .from("products")
+        .update(dbUpdates)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
-
       await fetchProducts();
       return { data, error: null };
     } catch (err) {
-      console.error('Error updating product:', err);
+      console.error("Error updating product:", err);
       return { data: null, error: err as Error };
     }
   };
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw error;
-
       await fetchProducts();
       return { error: null };
     } catch (err) {
-      console.error('Error deleting product:', err);
+      console.error("Error deleting product:", err);
       return { error: err as Error };
     }
   };
 
-  const addProductVariant = async (_variant: Omit<ProductVariant, 'id'>) => {
-    // product_variantsテーブルがないためダミー実装
-    return { data: null, error: new Error('Product variants not supported') };
+  const addProductVariant = async (variant: Omit<ProductVariant, "id">) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("product_variants")
+        .insert({
+          user_id: user?.id,
+          product_id: variant.parentProductId,
+          name: variant.name,
+          price: variant.price,
+          size: variant.size || null,
+          weight_kg: variant.weight || null,
+          sku: variant.sku || null,
+          is_active: variant.isActive ?? true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      await fetchProducts();
+      return { data, error: null };
+    } catch (err) {
+      console.error("Error adding product variant:", err);
+      return { data: null, error: err as Error };
+    }
   };
 
-  const updateProductVariant = async (_id: string, _updates: Partial<ProductVariant>) => {
-    return { data: null, error: new Error('Product variants not supported') };
+  const updateProductVariant = async (id: string, updates: Partial<ProductVariant>) => {
+    try {
+      const dbUpdates: Record<string, unknown> = {};
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.price !== undefined) dbUpdates.price = updates.price;
+      if (updates.size !== undefined) dbUpdates.size = updates.size || null;
+      if (updates.weight !== undefined) dbUpdates.weight_kg = updates.weight || null;
+      if (updates.sku !== undefined) dbUpdates.sku = updates.sku || null;
+      if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
+
+      const { data, error } = await supabase
+        .from("product_variants")
+        .update(dbUpdates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      await fetchProducts();
+      return { data, error: null };
+    } catch (err) {
+      console.error("Error updating product variant:", err);
+      return { data: null, error: err as Error };
+    }
   };
 
-  const deleteProductVariant = async (_id: string) => {
-    return { error: new Error('Product variants not supported') };
+  const deleteProductVariant = async (id: string) => {
+    try {
+      const { error } = await supabase.from("product_variants").delete().eq("id", id);
+      if (error) throw error;
+      await fetchProducts();
+      return { error: null };
+    } catch (err) {
+      console.error("Error deleting product variant:", err);
+      return { error: err as Error };
+    }
   };
 
   return {

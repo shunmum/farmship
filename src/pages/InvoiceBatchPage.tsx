@@ -26,10 +26,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useMockData } from "@/contexts/MockDataContext";
+import { useCustomers } from "@/hooks/useCustomers";
+import { useOrders, type Order } from "@/hooks/useOrders";
+import { useProducts } from "@/hooks/useProducts";
 import { useFarmInfo, type FarmInfo } from "@/hooks/useFarmInfo";
-import type { Order } from "@/data/mockData";
-import type { Customer, ProductVariant } from "@/types";
+import type { Customer } from "@/types";
+import type { ProductVariant } from "@/hooks/useProducts";
 import { useNavigate } from "react-router-dom";
 
 export type DocumentType = "請求書" | "請求書兼納品書" | "領収書";
@@ -525,7 +527,9 @@ function generateReceiptHTML(params: DocParams): string {
 const InvoiceBatchPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { customers, orders, productVariants } = useMockData();
+  const { customers } = useCustomers();
+  const { orders } = useOrders();
+  const { productVariants } = useProducts();
   const { farmInfo } = useFarmInfo();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState("");

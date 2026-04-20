@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2, PartyPopper, UserPlus, ChevronDown, ChevronUp } from "lucide-react";
-import { useMockData } from "@/contexts/MockDataContext";
+import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2, PartyPopper, UserPlus, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { useCustomers } from "@/hooks/useCustomers";
+import { useOrders } from "@/hooks/useOrders";
+import { useProducts } from "@/hooks/useProducts";
 import { useAreaShipping } from "@/hooks/useAreaShipping";
 import type { Recipient, InvoiceType } from "@/types";
-import type { OrderCategory } from "@/data/mockData";
+import type { OrderCategory } from "@/hooks/useOrders";
 
 interface OrderItem {
   productVariantId: string;
@@ -47,13 +49,17 @@ function extractPrefecture(address: string): string | null {
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
   const { toast } = useToast();
-  const { customers, products, productVariants, addOrder, addCustomer, updateCustomer } = useMockData();
+  const { customers, addCustomer, updateCustomer } = useCustomers();
+  const { addOrder } = useOrders();
+  const { products, productVariants } = useProducts();
   const { getShippingFee: getAreaShippingFee, getAreaByPrefecture } = useAreaShipping();
 
   const [step, setStep] = useState(1);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedRecipientId, setSelectedRecipientId] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [orderNote, setOrderNote] = useState("");
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [carrier, setCarrier] = useState<"yamato" | "sagawa" | "yupack">("yamato");
@@ -145,6 +151,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       shippingCompany: carrierLabel,
       orderCategory,
       isCoolDelivery: isCool,
+      note: orderNote || undefined,
     });
 
     if (invoiceType && selectedCustomer.invoiceType !== invoiceType) {
@@ -185,6 +192,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setNewCustomer({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
     setShowNewRecipientForm(false);
     setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+    setCustomerSearch("");
+    setOrderNote("");
   };
 
   const handleAddNewCustomer = () => {
@@ -258,9 +267,34 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
             <SelectValue placeholder="顧客を選択してください" />
           </SelectTrigger>
           <SelectContent>
-            {customers.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}（{c.phone}）</SelectItem>
-            ))}
+            <div className="p-2 border-b">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <input
+                  className="w-full pl-7 pr-2 py-1.5 text-sm border rounded outline-none focus:ring-1 focus:ring-[#2d6a4f]"
+                  placeholder="名前・電話番号で検索..."
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+            {customers
+              .filter((c) =>
+                customerSearch === "" ||
+                c.name.includes(customerSearch) ||
+                c.phone.includes(customerSearch)
+              )
+              .map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}（{c.phone}）</SelectItem>
+              ))}
+            {customers.filter((c) =>
+              customerSearch === "" ||
+              c.name.includes(customerSearch) ||
+              c.phone.includes(customerSearch)
+            ).length === 0 && (
+              <div className="py-3 text-center text-sm text-gray-400">該当なし</div>
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -627,6 +661,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
           {invoiceType && selectedCustomer?.invoiceType !== invoiceType && (
             <p className="text-xs text-[#2d6a4f]">※ 確定時にこの顧客の請求書種別が更新されます</p>
           )}
+        </div>
+        <div className="space-y-2">
+          <Label>備考</Label>
+          <textarea
+            className="w-full min-h-[72px] px-3 py-2 text-sm border rounded-md resize-none outline-none focus:ring-1 focus:ring-[#2d6a4f]"
+            placeholder="配送上の注意・特記事項など"
+            value={orderNote}
+            onChange={(e) => setOrderNote(e.target.value)}
+          />
         </div>
         {/* 送料内訳（商品ごと） */}
         <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
