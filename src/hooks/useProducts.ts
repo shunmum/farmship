@@ -49,7 +49,7 @@ export function useProducts() {
           id: p.id,
           name: p.name,
           category: p.category,
-          isParent: (variantsData ?? []).some((v) => v.product_id === p.id),
+          isParent: (variantsData ?? []).some((v) => v.parent_product_id === p.id),
           price: p.price ? Number(p.price) : undefined,
           size: p.size_cm ? String(p.size_cm) : undefined,
           weight: p.weight_kg ? Number(p.weight_kg) : undefined,
@@ -59,13 +59,13 @@ export function useProducts() {
       setProductVariants(
         (variantsData ?? []).map((v) => ({
           id: v.id,
-          parentProductId: v.product_id,
+          parentProductId: v.parent_product_id,
           name: v.name,
           price: Number(v.price),
           size: v.size ?? "",
-          weight: v.weight_kg ? Number(v.weight_kg) : 0,
+          weight: v.weight ? Number(v.weight) : 0,
           sku: v.sku ?? undefined,
-          isActive: v.is_active ?? true,
+          isActive: true,
         }))
       );
     } catch (err) {
@@ -149,13 +149,12 @@ export function useProducts() {
         .from("product_variants")
         .insert({
           user_id: user?.id,
-          product_id: variant.parentProductId,
+          parent_product_id: variant.parentProductId,
           name: variant.name,
           price: variant.price,
           size: variant.size || null,
-          weight_kg: variant.weight || null,
+          weight: variant.weight || null,
           sku: variant.sku || null,
-          is_active: variant.isActive ?? true,
         })
         .select()
         .single();
@@ -175,9 +174,8 @@ export function useProducts() {
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.price !== undefined) dbUpdates.price = updates.price;
       if (updates.size !== undefined) dbUpdates.size = updates.size || null;
-      if (updates.weight !== undefined) dbUpdates.weight_kg = updates.weight || null;
+      if (updates.weight !== undefined) dbUpdates.weight = updates.weight || null;
       if (updates.sku !== undefined) dbUpdates.sku = updates.sku || null;
-      if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
 
       const { data, error } = await supabase
         .from("product_variants")
