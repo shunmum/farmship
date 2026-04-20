@@ -68,7 +68,7 @@ const getInvoiceBadge = (invoiceType?: InvoiceType) => {
 };
 
 const EMPTY_CUSTOMER = { name: "", phone: "", email: "", postalCode: "", address: "", memo: "", invoiceType: "" as InvoiceType | "" };
-const EMPTY_RECIPIENT = { name: "", phone: "", postalCode: "", address: "", relation: "", email: "" };
+const EMPTY_RECIPIENT = { name: "", phone: "", postalCode: "", address: "", relation: "", email: "", notes: "" };
 
 function FormField({
   label,
@@ -716,6 +716,7 @@ const CustomersPage = () => {
             <FormField label="住所 *" value={newRecipient.address} onChange={(v) => setNewRecipient({ ...newRecipient, address: v })} placeholder="例: 東京都渋谷区道玄坂2-1-1" />
             <FormField label="電話番号 *" value={newRecipient.phone} onChange={(v) => setNewRecipient({ ...newRecipient, phone: v })} placeholder="例: 03-1111-2222" />
             <FormField label="メールアドレス" value={newRecipient.email} onChange={(v) => setNewRecipient({ ...newRecipient, email: v })} placeholder="例: hanako@example.com" type="email" />
+            <FormField label="備考" value={newRecipient.notes || ""} onChange={(v) => setNewRecipient({ ...newRecipient, notes: v })} placeholder="例: 不在時は置き配可" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowAddRecipient(false); setNewRecipient(EMPTY_RECIPIENT); }}>
@@ -770,6 +771,12 @@ const CustomersPage = () => {
                 value={editingRecipient.recipient.email || ""}
                 onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, email: v } })}
                 type="email"
+              />
+              <FormField
+                label="備考"
+                value={editingRecipient.recipient.notes || ""}
+                onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, notes: v } })}
+                placeholder="例: 不在時は置き配可"
               />
             </div>
           )}

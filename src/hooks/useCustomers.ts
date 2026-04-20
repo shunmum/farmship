@@ -30,6 +30,7 @@ function toRecipient(row: Record<string, unknown>): Recipient {
     address: row.address as string,
     email: (row.email as string) ?? undefined,
     relation: (row.relation as string) ?? undefined,
+    notes: (row.notes as string) ?? undefined,
   };
 }
 
@@ -167,6 +168,7 @@ export function useCustomers() {
           address: recipient.address,
           email: recipient.email || null,
           relation: recipient.relation || null,
+          notes: recipient.notes || null,
         })
         .select()
         .single();
@@ -189,6 +191,7 @@ export function useCustomers() {
       if (updates.address !== undefined) dbUpdates.address = updates.address;
       if (updates.email !== undefined) dbUpdates.email = updates.email || null;
       if (updates.relation !== undefined) dbUpdates.relation = updates.relation || null;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
 
       const { data, error } = await supabase
         .from("recipients")

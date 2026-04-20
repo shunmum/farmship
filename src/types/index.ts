@@ -25,6 +25,7 @@ export interface Recipient {
   phone: string;
   email?: string;
   relation?: string;
+  notes?: string;
 }
 
 // ============================================
