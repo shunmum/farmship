@@ -148,40 +148,73 @@ const OrdersPage = () => {
       return;
     }
 
+    // B2クラウド公式フォーマット 95列
+    const B2_HEADERS = [
+      "お客様管理番号", "送り状種類", "クール区分", "伝票番号", "出荷予定日",
+      "お届け予定日", "配達時間帯", "お届け先コード", "お届け先電話番号", "お届け先電話番号枝番",
+      "お届け先郵便番号", "お届け先住所", "お届け先アパートマンション名", "お届け先会社・部門1", "お届け先会社・部門2",
+      "お届け先名", "お届け先名(ｶﾅ)", "敬称", "ご依頼主コード", "ご依頼主電話番号",
+      "ご依頼主電話番号枝番", "ご依頼主郵便番号", "ご依頼主住所", "ご依頼主アパートマンション", "ご依頼主名",
+      "ご依頼主名(ｶﾅ)", "品名コード1", "品名1", "品名コード2", "品名2",
+      "荷扱い1", "荷扱い2", "記事", "ｺﾚｸﾄ代金引換額（税込)", "内消費税額等",
+      "止置き", "営業所コード", "発行枚数", "個数口表示フラグ", "請求先顧客コード",
+      "請求先分類コード", "運賃管理番号", "クロネコwebコレクトデータ登録", "クロネコwebコレクト加盟店番号", "クロネコwebコレクト申込受付番号1",
+      "クロネコwebコレクト申込受付番号2", "クロネコwebコレクト申込受付番号3", "お届け予定ｅメール利用区分", "お届け予定ｅメールe-mailアドレス", "入力機種",
+      "お届け予定ｅメールメッセージ", "お届け完了ｅメール利用区分", "お届け完了ｅメールe-mailアドレス", "お届け完了ｅメールメッセージ", "クロネコ収納代行利用区分",
+      "予備", "収納代行請求金額(税込)", "収納代行内消費税額等", "収納代行請求先郵便番号", "収納代行請求先住所",
+      "収納代行請求先住所（アパートマンション名）", "収納代行請求先会社・部門名1", "収納代行請求先会社・部門名2", "収納代行請求先名(漢字)", "収納代行請求先名(カナ)",
+      "収納代行問合せ先名(漢字)", "収納代行問合せ先郵便番号", "収納代行問合せ先住所", "収納代行問合せ先住所（アパートマンション名）", "収納代行問合せ先電話番号",
+      "収納代行管理番号", "収納代行品名", "収納代行備考", "複数口くくりキー", "検索キータイトル1",
+      "検索キー1", "検索キータイトル2", "検索キー2", "検索キータイトル3", "検索キー3",
+      "検索キータイトル4", "検索キー4", "検索キータイトル5", "検索キー5", "予備_2",
+      "予備_3", "投函予定メール利用区分", "投函予定メールe-mailアドレス", "投函予定メールメッセージ", "投函完了メール（お届け先宛）利用区分",
+      "投函完了メール（お届け先宛）e-mailアドレス", "投函完了メール（お届け先宛）メールメッセージ", "投函完了メール（ご依頼主宛）利用区分", "投函完了メール（ご依頼主宛）e-mailアドレス", "投函完了メール（ご依頼主宛）メールメッセージ",
+    ];
+
+    // YYYY-MM-DD → YYYY/MM/DD
+    const toSlashDate = (d?: string) => (d ? d.replace(/-/g, "/") : "");
+
     const rows = targetOrders.map((order) => {
       const recipientInfo = order.recipientId
-        ? recipientMap.get(order.recipientId) || {
-            postalCode: "",
-            address: "",
-            phone: "",
-          }
-        : {
-            postalCode: "",
-            address: "",
-            phone: "",
-          };
+        ? recipientMap.get(order.recipientId) || { postalCode: "", address: "", phone: "" }
+        : { postalCode: "", address: "", phone: "" };
+      const customer = customerMap.get(order.customerId);
+      const deliveryDate = toSlashDate(order.deliveryDate);
 
-      return {
-        注文番号: order.orderNumber,
-        受注日: order.orderDate,
-        送り主名: order.customerName,
-        お届け先名: order.recipientName || "",
-        お届け先郵便番号: recipientInfo.postalCode,
-        お届け先住所: recipientInfo.address,
-        お届け先電話番号: recipientInfo.phone,
-        配送予定日: order.deliveryDate,
-        商品情報: order.products
-          .map((p) => `${p.productName}×${p.quantity}`)
-          .join(" / "),
-        合計金額: order.amount,
-        配送会社: order.shippingCompany || "",
-        種別: order.orderCategory || "",
-        メモ: order.note || "",
-      };
+      const product1 = order.products[0];
+      const product2 = order.products[1];
+      const itemName = (p?: typeof order.products[0]) =>
+        p ? (p.quantity > 1 ? `${p.productName}×${p.quantity}` : p.productName) : "";
+
+      const row: Record<string, string | number> = {};
+      B2_HEADERS.forEach((h) => (row[h] = ""));
+
+      row["お客様管理番号"] = order.orderNumber;
+      row["送り状種類"] = "0"; // 発払い
+      row["クール区分"] = order.isCoolDelivery ? "2" : "0";
+      row["出荷予定日"] = deliveryDate;
+      row["お届け予定日"] = deliveryDate;
+      row["お届け先電話番号"] = recipientInfo.phone;
+      row["お届け先郵便番号"] = recipientInfo.postalCode;
+      row["お届け先住所"] = recipientInfo.address;
+      row["お届け先名"] = order.recipientName || "";
+      row["敬称"] = "様";
+      row["ご依頼主電話番号"] = customer?.phone ?? "";
+      row["ご依頼主郵便番号"] = customer?.postalCode ?? "";
+      row["ご依頼主住所"] = customer?.address ?? "";
+      row["ご依頼主名"] = order.customerName;
+      row["品名1"] = itemName(product1);
+      row["品名2"] = itemName(product2);
+      row["荷扱い1"] = order.orderCategory && order.orderCategory !== "なし" ? order.orderCategory : "";
+      row["記事"] = order.note || "";
+      row["発行枚数"] = "1";
+
+      return row;
     });
 
-    const csv = Papa.unparse(rows, { header: true });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const csv = Papa.unparse({ fields: B2_HEADERS, data: rows });
+    // B2クラウドはShift_JIS前提だがUTF-8 BOMでExcelでも開ける
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
