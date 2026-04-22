@@ -44,11 +44,48 @@ import {
   StickyNote,
   Package,
   Send,
+  Upload,
 } from "lucide-react";
+import { CustomerImportDialog } from "@/components/CustomerImportDialog";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useOrders, type Order } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/use-toast";
 import { usePostalCode } from "@/hooks/usePostalCode";
 import type { Customer, Recipient, InvoiceType } from "@/types";
+
+function RecipientOrderHistory({ orders }: { orders: Order[] }) {
+  if (orders.length === 0) return null;
+  const statusClass = (s: string) =>
+    s === "配送済み"
+      ? "bg-green-100 text-green-700"
+      : s === "キャンセル"
+      ? "bg-gray-200 text-gray-600"
+      : "bg-blue-100 text-blue-700";
+  return (
+    <div className="border-t pt-2 mt-2 space-y-1.5">
+      <p className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+        <Package className="h-3 w-3" />発送履歴（{orders.length}件）
+      </p>
+      <div className="space-y-1 max-h-40 overflow-y-auto">
+        {orders.map((o) => (
+          <div key={o.id} className="text-xs flex items-center justify-between gap-2 bg-white/70 rounded px-2 py-1">
+            <div className="min-w-0 flex-1">
+              <span className="text-gray-500">{o.orderDate}</span>
+              <span className="mx-1 text-gray-300">·</span>
+              <span className="text-gray-800 truncate">
+                {o.products.map((p) => p.productName).join("、") || "—"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-gray-600">¥{o.amount.toLocaleString()}</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] ${statusClass(o.status)}`}>{o.status}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const INVOICE_TYPES: InvoiceType[] = ["箱に入れる", "郵送する", "メールで送る"];
 
@@ -98,6 +135,12 @@ function FormField({
 
 const CustomersPage = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, addRecipient, updateRecipient, deleteRecipient } = useCustomers();
+  const { orders } = useOrders();
+  const ordersByRecipient = orders.reduce<Record<string, Order[]>>((acc, o) => {
+    if (!o.recipientId) return acc;
+    (acc[o.recipientId] ||= []).push(o);
+    return acc;
+  }, {});
   const { toast } = useToast();
   const { lookup: lookupPostal } = usePostalCode();
   const { lookup: lookupRecipientPostal } = usePostalCode();
@@ -107,6 +150,7 @@ const CustomersPage = () => {
 
   // 送り主追加
   const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [newCustomer, setNewCustomer] = useState(EMPTY_CUSTOMER);
 
   // 送り主編集
@@ -207,14 +251,25 @@ const CustomersPage = () => {
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">顧客管理</h1>
             <p className="text-sm text-muted-foreground">送り主と送り先の管理</p>
           </div>
-          <Button
-            size="lg"
-            className="w-full sm:w-auto bg-[#2d6a4f] hover:bg-[#1b4332] gap-2"
-            onClick={() => setShowAddCustomer(true)}
-          >
-            <Plus className="h-5 w-5" />
-            送り主を追加
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              size="lg"
+              variant="outline"
+              className="flex-1 sm:flex-none gap-2"
+              onClick={() => setShowImport(true)}
+            >
+              <Upload className="h-4 w-4" />
+              CSVインポート
+            </Button>
+            <Button
+              size="lg"
+              className="flex-1 sm:flex-none bg-[#2d6a4f] hover:bg-[#1b4332] gap-2"
+              onClick={() => setShowAddCustomer(true)}
+            >
+              <Plus className="h-5 w-5" />
+              送り主を追加
+            </Button>
+          </div>
         </div>
 
         {/* 検索 */}
@@ -319,6 +374,7 @@ const CustomersPage = () => {
                                 <p>TEL: {r.phone}</p>
                                 {r.email && <p>{r.email}</p>}
                               </div>
+                              <RecipientOrderHistory orders={ordersByRecipient[r.id] ?? []} />
                             </div>
                           ))}
                         </div>
@@ -516,6 +572,7 @@ const CustomersPage = () => {
                                             <p className="truncate">{r.email}</p>
                                           </div>
                                         )}
+                                        <RecipientOrderHistory orders={ordersByRecipient[r.id] ?? []} />
                                       </div>
                                     ))}
                                   </div>
@@ -551,6 +608,8 @@ const CustomersPage = () => {
       {/* ===== ダイアログ群 ===== */}
 
       {/* 送り主追加 */}
+      <CustomerImportDialog open={showImport} onOpenChange={setShowImport} />
+
       <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
