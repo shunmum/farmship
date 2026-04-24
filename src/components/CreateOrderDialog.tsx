@@ -577,7 +577,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
                             </Button>
                           </div>
                         ) : (
-                          <Button size="sm" className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => addOrderItem(variant.id, variant.name, variant.price)}>
+                          <Button size="sm" className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => addOrderItem(variant.id, `${product.name} ${variant.name}`, variant.price)}>
                             追加
                           </Button>
                         )}

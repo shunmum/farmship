@@ -147,6 +147,7 @@ export function useOrders() {
           order.products.map((p) => ({
             user_id: user?.id,
             order_id: orderData.id,
+            product_variant_id: p.productId || null,
             product_name: p.productName,
             quantity: p.quantity,
             shipping_fee: p.shippingFee ?? null,
@@ -199,6 +200,7 @@ export function useOrders() {
             updates.products.map((p) => ({
               user_id: user?.id,
               order_id: id,
+              product_variant_id: p.productId || null,
               product_name: p.productName,
               quantity: p.quantity,
               shipping_fee: p.shippingFee ?? null,
