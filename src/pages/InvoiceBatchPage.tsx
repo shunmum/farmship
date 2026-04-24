@@ -533,8 +533,9 @@ const InvoiceBatchPage = () => {
   const { farmInfo } = useFarmInfo();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
-  const [startDate, setStartDate] = useState("2026-03-01");
-  const [endDate, setEndDate] = useState("2026-03-31");
+  const today = new Date().toISOString().split("T")[0];
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [filteredOrders, setFilteredOrders] = useState<typeof orders>([]);
   const [searched, setSearched] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
