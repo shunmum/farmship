@@ -78,6 +78,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const [showNewRecipientForm, setShowNewRecipientForm] = useState(false);
   const [newRecipient, setNewRecipient] = useState({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
 
+  // 商品選択アコーディオン開閉
+  const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) => {
+    setExpandedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   // ダイアログを開くたびにリセット
   useEffect(() => {
     if (open) {
@@ -578,45 +589,88 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
         <Package className="h-5 w-5 text-[#2d6a4f]" />
         <span>商品を選択</span>
       </div>
-      <div className="space-y-4 max-h-[360px] overflow-y-auto">
-        {products.map((product) => {
-          const variants = productVariants.filter((v) => v.parentProductId === product.id);
-          return (
-            <div key={product.id}>
-              <p className="text-sm font-semibold text-gray-700 mb-2">{product.name}</p>
+      <div className="space-y-5 max-h-[420px] overflow-y-auto">
+        {(() => {
+          // カテゴリごとにグルーピング
+          const byCategory = new Map<string, typeof products>();
+          products.forEach((p) => {
+            const cat = p.category || "その他";
+            if (!byCategory.has(cat)) byCategory.set(cat, []);
+            byCategory.get(cat)!.push(p);
+          });
+          return Array.from(byCategory.entries()).map(([category, categoryProducts]) => (
+            <div key={category} className="space-y-2">
+              <p className="text-xs font-bold text-[#2d6a4f] uppercase tracking-wide border-l-4 border-[#2d6a4f] pl-2">
+                {category}
+              </p>
               <div className="space-y-2">
-                {variants.map((variant) => {
-                  const selected = orderItems.find((i) => i.productVariantId === variant.id);
+                {categoryProducts.map((product) => {
+                  const variants = productVariants.filter((v) => v.parentProductId === product.id);
+                  const isExpanded = expandedProductIds.has(product.id);
+                  const selectedCount = variants.reduce((n, v) => {
+                    const sel = orderItems.find((i) => i.productVariantId === v.id);
+                    return n + (sel ? sel.quantity : 0);
+                  }, 0);
                   return (
-                    <Card key={variant.id} className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">{variant.name}</p>
-                          <p className="text-sm text-[#2d6a4f] font-semibold">¥{variant.price.toLocaleString()}</p>
+                    <div key={product.id} className="border rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-between px-3 py-3 text-left bg-gray-50 hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleExpanded(product.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-gray-800">{product.name}</span>
+                          {selectedCount > 0 && (
+                            <span className="text-xs bg-[#2d6a4f] text-white px-2 py-0.5 rounded-full">
+                              {selectedCount}点選択中
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400">（{variants.length}種類）</span>
                         </div>
-                        {selected ? (
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline" onClick={() => updateQuantity(variant.id, -1)}>
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 text-center font-semibold">{selected.quantity}</span>
-                            <Button size="sm" variant="outline" onClick={() => updateQuantity(variant.id, 1)}>
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button size="sm" className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => addOrderItem(variant.id, `${product.name} ${variant.name}`, variant.price)}>
-                            追加
-                          </Button>
-                        )}
-                      </div>
-                    </Card>
+                        {isExpanded ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
+                      </button>
+                      {isExpanded && (
+                        <div className="p-2 space-y-2 bg-white">
+                          {variants.length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-2">バリエーションがありません</p>
+                          )}
+                          {variants.map((variant) => {
+                            const selected = orderItems.find((i) => i.productVariantId === variant.id);
+                            return (
+                              <Card key={variant.id} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-medium">{variant.name}</p>
+                                    <p className="text-sm text-[#2d6a4f] font-semibold">¥{variant.price.toLocaleString()}</p>
+                                  </div>
+                                  {selected ? (
+                                    <div className="flex items-center gap-2">
+                                      <Button size="sm" variant="outline" onClick={() => updateQuantity(variant.id, -1)}>
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                      <span className="w-6 text-center font-semibold">{selected.quantity}</span>
+                                      <Button size="sm" variant="outline" onClick={() => updateQuantity(variant.id, 1)}>
+                                        <Plus className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button size="sm" className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => addOrderItem(variant.id, `${product.name} ${variant.name}`, variant.price)}>
+                                      追加
+                                    </Button>
+                                  )}
+                                </div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             </div>
-          );
-        })}
+          ));
+        })()}
       </div>
       {orderItems.length > 0 && (
         <div className="bg-[#2d6a4f]/5 p-3 rounded-lg space-y-1">
