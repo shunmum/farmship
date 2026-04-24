@@ -17,6 +17,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useOrders } from "@/hooks/useOrders";
 import { useProducts } from "@/hooks/useProducts";
 import { useAreaShipping } from "@/hooks/useAreaShipping";
+import { usePostalCode } from "@/hooks/usePostalCode";
 import type { Recipient, InvoiceType } from "@/types";
 import type { OrderCategory } from "@/hooks/useOrders";
 
@@ -53,6 +54,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const { addOrder } = useOrders();
   const { products, productVariants } = useProducts();
   const { getShippingFee: getAreaShippingFee, getAreaByPrefecture } = useAreaShipping();
+  const { lookup: lookupCustomerPostal } = usePostalCode();
+  const { lookup: lookupRecipientPostal } = usePostalCode();
 
   const [step, setStep] = useState(1);
 
@@ -367,7 +370,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
                 <Input
                   placeholder="000-0000"
                   value={newCustomer.postalCode}
-                  onChange={(e) => setNewCustomer((p) => ({ ...p, postalCode: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewCustomer((p) => ({ ...p, postalCode: val }));
+                    lookupCustomerPostal(val).then((result) => {
+                      if (result) setNewCustomer((p) => ({ ...p, address: result.address }));
+                    });
+                  }}
                 />
               </div>
               <div className="col-span-2 space-y-1">
@@ -494,7 +503,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
                 <Input
                   placeholder="000-0000"
                   value={newRecipient.postalCode}
-                  onChange={(e) => setNewRecipient((p) => ({ ...p, postalCode: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewRecipient((p) => ({ ...p, postalCode: val }));
+                    lookupRecipientPostal(val).then((result) => {
+                      if (result) setNewRecipient((p) => ({ ...p, address: result.address }));
+                    });
+                  }}
                 />
               </div>
               <div className="col-span-2 space-y-1">
