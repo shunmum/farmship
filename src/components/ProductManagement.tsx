@@ -300,24 +300,36 @@ const ProductManagement = () => {
                     <div className="p-3 space-y-3 bg-white">
                     {categoryProducts.map((product) => {
                       const variants = productVariants.filter(v => v.parentProductId === product.id);
+                      const productKey = `product:${product.id}`;
+                      const productOpen = expandedCategories.has(productKey);
                       return (
-                        <Card key={product.id} className="p-4">
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between">
+                        <Card key={product.id} className="overflow-hidden">
+                          <button
+                            type="button"
+                            className="w-full flex items-start justify-between p-4 hover:bg-gray-50 transition-colors text-left"
+                            onClick={() => toggleCategory(productKey)}
+                          >
+                            <div className="flex items-center gap-3">
+                              {productOpen ? <ChevronUp className="h-4 w-4 text-gray-500 mt-1" /> : <ChevronDown className="h-4 w-4 text-gray-500 mt-1" />}
                               <div>
                                 <h4 className="font-medium text-base">{product.name}</h4>
-                                <p className="text-sm text-muted-foreground">{product.category}</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button onClick={() => handleEditProduct(product)} variant="outline" size="sm">
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button onClick={() => handleDeleteProduct(product.id)} variant="outline" size="sm">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                                <p className="text-sm text-muted-foreground">
+                                  {product.category}
+                                  <span className="ml-2 text-xs">（{variants.length}バリエーション）</span>
+                                </p>
                               </div>
                             </div>
-                            <div className="space-y-2 pl-4 border-l-2">
+                            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                              <Button onClick={() => handleEditProduct(product)} variant="outline" size="sm">
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button onClick={() => handleDeleteProduct(product.id)} variant="outline" size="sm">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </button>
+                          {productOpen && (
+                            <div className="px-4 pb-4 space-y-2 pl-8 border-l-2 ml-4">
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm font-medium">バリエーション</span>
                                 <Button onClick={() => handleAddVariant(product.id)} variant="outline" size="sm">
@@ -346,7 +358,7 @@ const ProductManagement = () => {
                                 <p className="text-sm text-muted-foreground">バリエーションがありません</p>
                               )}
                             </div>
-                          </div>
+                          )}
                         </Card>
                       );
                     })}
