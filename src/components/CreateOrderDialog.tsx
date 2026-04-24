@@ -49,7 +49,7 @@ function extractPrefecture(address: string): string | null {
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
   const { toast } = useToast();
-  const { customers, addCustomer, updateCustomer } = useCustomers();
+  const { customers, addCustomer, updateCustomer, addRecipient } = useCustomers();
   const { addOrder } = useOrders();
   const { products, productVariants } = useProducts();
   const { getShippingFee: getAreaShippingFee, getAreaByPrefecture } = useAreaShipping();
@@ -196,9 +196,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setOrderNote("");
   };
 
-  const handleAddNewCustomer = () => {
+  const handleAddNewCustomer = async () => {
     if (!newCustomer.name || !newCustomer.phone) return;
-    const newId = addCustomer({
+    const { data, error } = await addCustomer({
       name: newCustomer.name,
       phone: newCustomer.phone,
       email: newCustomer.email,
@@ -206,18 +206,20 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       address: newCustomer.address,
       memo: newCustomer.memo,
     });
-    setSelectedCustomerId(newId);
+    if (error || !data) {
+      toast({ title: "登録に失敗しました", description: error?.message, variant: "destructive" });
+      return;
+    }
+    setSelectedCustomerId(data.id);
     setInvoiceType("");
     toast({ title: "✅ 顧客を登録しました", description: newCustomer.name });
     setShowNewCustomerForm(false);
     setNewCustomer({ name: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
   };
 
-  const handleAddNewRecipient = () => {
+  const handleAddNewRecipient = async () => {
     if (!newRecipient.name || !newRecipient.phone || !selectedCustomer) return;
-    const newId = `R${Date.now()}`;
-    const recipient = {
-      id: newId,
+    const { data, error } = await addRecipient({
       customerId: selectedCustomer.id,
       name: newRecipient.name,
       phone: newRecipient.phone,
@@ -225,11 +227,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       address: newRecipient.address,
       relation: newRecipient.relation || undefined,
       email: newRecipient.email || undefined,
-    };
-    updateCustomer(selectedCustomer.id, {
-      recipients: [...(selectedCustomer.recipients || []), recipient],
     });
-    setSelectedRecipientId(newId);
+    if (error || !data) {
+      toast({ title: "登録に失敗しました", description: error?.message, variant: "destructive" });
+      return;
+    }
+    setSelectedRecipientId(data.id);
     toast({ title: "✅ 送り先を登録しました", description: newRecipient.name });
     setShowNewRecipientForm(false);
     setNewRecipient({ name: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
