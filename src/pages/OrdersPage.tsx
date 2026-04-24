@@ -16,10 +16,12 @@ import { useCustomers } from "@/hooks/useCustomers";
 import Papa from "papaparse";
 import { useToast } from "@/hooks/use-toast";
 import { CreateOrderDialog } from "@/components/CreateOrderDialog";
-import type { OrderCategory } from "@/hooks/useOrders";
+import type { OrderCategory, OrderStatus, PaymentStatus } from "@/hooks/useOrders";
 import type { InvoiceType } from "@/types";
 
 const ORDER_CATEGORIES: OrderCategory[] = ["のし", "お中元", "お供え", "なし"];
+const ORDER_STATUSES: OrderStatus[] = ["配送前", "配送済み", "キャンセル"];
+const PAYMENT_STATUSES: PaymentStatus[] = ["未入金", "入金済み"];
 
 const getInvoiceBadge = (invoiceType?: InvoiceType) => {
   if (!invoiceType) return null;
@@ -378,45 +380,45 @@ const OrdersPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b text-left text-sm text-muted-foreground">
-                    <th className="pb-3 font-medium w-12">No.</th>
-                    <th className="pb-3 font-medium">受注日</th>
-                    <th className="pb-3 font-medium">顧客名</th>
-                    <th className="pb-3 font-medium">商品・数量</th>
-                    <th className="pb-3 font-medium">金額</th>
-                    <th className="pb-3 font-medium">配送予定日</th>
-                    <th className="pb-3 font-medium">クール便</th>
-                    <th className="pb-3 font-medium">種別</th>
-                    <th className="pb-3 font-medium">請求書</th>
-                    <th className="pb-3 font-medium">配送ステータス</th>
-                    <th className="pb-3 font-medium">入金ステータス</th>
-                    <th className="pb-3 font-medium">アクション</th>
+                    <th className="pb-4 px-3 font-medium w-14 whitespace-nowrap">No.</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">受注日</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">顧客名</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">商品・数量</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">金額</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">配送予定日</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">クール便</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">種別</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">請求書</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">配送ステータス</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">入金ステータス</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">アクション</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredOrders.map((order) => (
                     <tr key={order.id} className="border-b text-sm transition-colors hover:bg-muted/50">
-                      <td className="py-4 font-bold text-muted-foreground">
+                      <td className="py-5 px-3 font-bold text-muted-foreground whitespace-nowrap">
                         No.{orderNumberMap.get(order.id)}
                       </td>
-                      <td className="py-4">{order.orderDate}</td>
-                      <td className="py-4 font-medium">{order.customerName}</td>
-                      <td className="py-4">
+                      <td className="py-5 px-3 whitespace-nowrap">{order.orderDate}</td>
+                      <td className="py-5 px-3 font-medium whitespace-nowrap">{order.customerName}</td>
+                      <td className="py-5 px-3">
                         {order.products.map((p, i) => (
-                          <div key={i} className="text-muted-foreground">
+                          <div key={i} className="text-muted-foreground leading-relaxed">
                             {p.productName} × {p.quantity}
                           </div>
                         ))}
                       </td>
-                      <td className="py-4 font-semibold text-primary">¥{order.amount.toLocaleString()}</td>
-                      <td className="py-4">{order.deliveryDate}</td>
-                      <td className="py-4">
+                      <td className="py-5 px-3 font-semibold text-primary whitespace-nowrap">¥{order.amount.toLocaleString()}</td>
+                      <td className="py-5 px-3 whitespace-nowrap">{order.deliveryDate}</td>
+                      <td className="py-5 px-3 whitespace-nowrap">
                         {order.isCoolDelivery ? (
                           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">クール</Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">なし</span>
                         )}
                       </td>
-                      <td className="py-4">
+                      <td className="py-5 px-3 whitespace-nowrap">
                         <Select
                           value={order.orderCategory || "なし"}
                           onValueChange={(v) =>
@@ -438,12 +440,44 @@ const OrdersPage = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="py-4">
+                      <td className="py-5 px-3 whitespace-nowrap">
                         {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
                       </td>
-                      <td className="py-4">{getStatusBadge(order.status)}</td>
-                      <td className="py-4">{getPaymentBadge(order.paymentStatus)}</td>
-                      <td className="py-4">
+                      <td className="py-5 px-3 whitespace-nowrap">
+                        <Select
+                          value={order.status}
+                          onValueChange={(v) =>
+                            updateOrder(order.id, { status: v as OrderStatus })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-auto min-w-[110px] text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
+                            <SelectValue>{getStatusBadge(order.status)}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ORDER_STATUSES.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="py-5 px-3 whitespace-nowrap">
+                        <Select
+                          value={order.paymentStatus}
+                          onValueChange={(v) =>
+                            updateOrder(order.id, { paymentStatus: v as PaymentStatus })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
+                            <SelectValue>{getPaymentBadge(order.paymentStatus)}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PAYMENT_STATUSES.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="py-5 px-3 whitespace-nowrap">
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
@@ -485,8 +519,36 @@ const OrdersPage = () => {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        {getStatusBadge(order.status)}
-                        {getPaymentBadge(order.paymentStatus)}
+                        <Select
+                          value={order.status}
+                          onValueChange={(v) =>
+                            updateOrder(order.id, { status: v as OrderStatus })
+                          }
+                        >
+                          <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-0 focus:ring-0 gap-1">
+                            <SelectValue>{getStatusBadge(order.status)}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ORDER_STATUSES.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={order.paymentStatus}
+                          onValueChange={(v) =>
+                            updateOrder(order.id, { paymentStatus: v as PaymentStatus })
+                          }
+                        >
+                          <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-0 focus:ring-0 gap-1">
+                            <SelectValue>{getPaymentBadge(order.paymentStatus)}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PAYMENT_STATUSES.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div className="space-y-1.5 py-2">
