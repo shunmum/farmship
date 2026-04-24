@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/hooks/useProducts";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -231,6 +231,17 @@ const ProductManagement = () => {
   const parentProducts = products.filter(p => p.isParent);
   const singleProducts = products.filter(p => !p.isParent);
 
+  // カテゴリ折りたたみ状態（デフォルトは全て閉じる）
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const toggleCategory = (key: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -267,14 +278,26 @@ const ProductManagement = () => {
               byCategory.get(cat)!.push(p);
             });
             return (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-lg">バリエーション商品</h3>
-                {Array.from(byCategory.entries()).map(([category, categoryProducts]) => (
-                  <div key={category} className="space-y-3">
-                    <div className="flex items-center gap-2 border-l-4 border-[#2d6a4f] pl-2">
-                      <h4 className="text-sm font-bold text-[#2d6a4f] uppercase tracking-wide">{category}</h4>
-                      <span className="text-xs text-muted-foreground">（{categoryProducts.length}商品）</span>
-                    </div>
+                {Array.from(byCategory.entries()).map(([category, categoryProducts]) => {
+                  const key = `parent:${category}`;
+                  const isOpen = expandedCategories.has(key);
+                  return (
+                  <div key={category} className="border rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      onClick={() => toggleCategory(key)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#2d6a4f] border-l-4 border-[#2d6a4f] pl-2">{category}</span>
+                        <span className="text-xs text-muted-foreground">（{categoryProducts.length}商品）</span>
+                      </div>
+                      {isOpen ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
+                    </button>
+                    {isOpen && (
+                    <div className="p-3 space-y-3 bg-white">
                     {categoryProducts.map((product) => {
                       const variants = productVariants.filter(v => v.parentProductId === product.id);
                       return (
@@ -327,8 +350,11 @@ const ProductManagement = () => {
                         </Card>
                       );
                     })}
+                    </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
@@ -342,14 +368,26 @@ const ProductManagement = () => {
               byCategory.get(cat)!.push(p);
             });
             return (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-lg">単品商品</h3>
-                {Array.from(byCategory.entries()).map(([category, categoryProducts]) => (
-                  <div key={category} className="space-y-3">
-                    <div className="flex items-center gap-2 border-l-4 border-[#2d6a4f] pl-2">
-                      <h4 className="text-sm font-bold text-[#2d6a4f] uppercase tracking-wide">{category}</h4>
-                      <span className="text-xs text-muted-foreground">（{categoryProducts.length}商品）</span>
-                    </div>
+                {Array.from(byCategory.entries()).map(([category, categoryProducts]) => {
+                  const key = `single:${category}`;
+                  const isOpen = expandedCategories.has(key);
+                  return (
+                  <div key={category} className="border rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      onClick={() => toggleCategory(key)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#2d6a4f] border-l-4 border-[#2d6a4f] pl-2">{category}</span>
+                        <span className="text-xs text-muted-foreground">（{categoryProducts.length}商品）</span>
+                      </div>
+                      {isOpen ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
+                    </button>
+                    {isOpen && (
+                    <div className="p-3 space-y-3 bg-white">
                     {categoryProducts.map((product) => (
                       <Card key={product.id} className="p-4">
                         <div className="flex items-start justify-between">
@@ -370,8 +408,11 @@ const ProductManagement = () => {
                         </div>
                       </Card>
                     ))}
+                    </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
