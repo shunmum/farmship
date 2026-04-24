@@ -258,121 +258,123 @@ const ProductManagement = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* 親商品（バリエーションあり） */}
-          {parentProducts.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg">バリエーション商品</h3>
-              {parentProducts.map((product) => {
-                const variants = productVariants.filter(v => v.parentProductId === product.id);
-                return (
-                  <Card key={product.id} className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-medium text-base">{product.name}</h4>
-                          <p className="text-sm text-muted-foreground">{product.category}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleEditProduct(product)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteProduct(product.id)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 pl-4 border-l-2">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">バリエーション</span>
-                          <Button
-                            onClick={() => handleAddVariant(product.id)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            追加
-                          </Button>
-                        </div>
-                        {variants.map((variant) => (
-                          <div key={variant.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                            <div className="flex-1">
-                              <span className="text-sm">{variant.name}</span>
-                              <span className="text-sm text-muted-foreground ml-2">
-                                ¥{variant.price.toLocaleString()} / {variant.size}サイズ / {variant.weight}kg
-                              </span>
+          {/* 親商品（バリエーションあり）— カテゴリ別にグルーピング */}
+          {parentProducts.length > 0 && (() => {
+            const byCategory = new Map<string, typeof parentProducts>();
+            parentProducts.forEach((p) => {
+              const cat = p.category || "その他";
+              if (!byCategory.has(cat)) byCategory.set(cat, []);
+              byCategory.get(cat)!.push(p);
+            });
+            return (
+              <div className="space-y-6">
+                <h3 className="font-semibold text-lg">バリエーション商品</h3>
+                {Array.from(byCategory.entries()).map(([category, categoryProducts]) => (
+                  <div key={category} className="space-y-3">
+                    <div className="flex items-center gap-2 border-l-4 border-[#2d6a4f] pl-2">
+                      <h4 className="text-sm font-bold text-[#2d6a4f] uppercase tracking-wide">{category}</h4>
+                      <span className="text-xs text-muted-foreground">（{categoryProducts.length}商品）</span>
+                    </div>
+                    {categoryProducts.map((product) => {
+                      const variants = productVariants.filter(v => v.parentProductId === product.id);
+                      return (
+                        <Card key={product.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h4 className="font-medium text-base">{product.name}</h4>
+                                <p className="text-sm text-muted-foreground">{product.category}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button onClick={() => handleEditProduct(product)} variant="outline" size="sm">
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button onClick={() => handleDeleteProduct(product.id)} variant="outline" size="sm">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex gap-1">
-                              <Button
-                                onClick={() => handleEditVariant(variant)}
-                                variant="ghost"
-                                size="sm"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                onClick={() => handleDeleteVariant(variant.id)}
-                                variant="ghost"
-                                size="sm"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                            <div className="space-y-2 pl-4 border-l-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium">バリエーション</span>
+                                <Button onClick={() => handleAddVariant(product.id)} variant="outline" size="sm">
+                                  <Plus className="h-3 w-3 mr-1" />追加
+                                </Button>
+                              </div>
+                              {variants.map((variant) => (
+                                <div key={variant.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                                  <div className="flex-1">
+                                    <span className="text-sm">{variant.name}</span>
+                                    <span className="text-sm text-muted-foreground ml-2">
+                                      ¥{variant.price.toLocaleString()} / {variant.size}サイズ / {variant.weight}kg
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button onClick={() => handleEditVariant(variant)} variant="ghost" size="sm">
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                    <Button onClick={() => handleDeleteVariant(variant.id)} variant="ghost" size="sm">
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                              {variants.length === 0 && (
+                                <p className="text-sm text-muted-foreground">バリエーションがありません</p>
+                              )}
                             </div>
                           </div>
-                        ))}
-                        {variants.length === 0 && (
-                          <p className="text-sm text-muted-foreground">バリエーションがありません</p>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-
-          {/* 単品商品 */}
-          {singleProducts.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg">単品商品</h3>
-              {singleProducts.map((product) => (
-                <Card key={product.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-medium text-base">{product.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {product.category} / ¥{product.price?.toLocaleString()} / {product.size}サイズ / {product.weight}kg
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleEditProduct(product)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                        </Card>
+                      );
+                    })}
                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* 単品商品 — カテゴリ別にグルーピング */}
+          {singleProducts.length > 0 && (() => {
+            const byCategory = new Map<string, typeof singleProducts>();
+            singleProducts.forEach((p) => {
+              const cat = p.category || "その他";
+              if (!byCategory.has(cat)) byCategory.set(cat, []);
+              byCategory.get(cat)!.push(p);
+            });
+            return (
+              <div className="space-y-6">
+                <h3 className="font-semibold text-lg">単品商品</h3>
+                {Array.from(byCategory.entries()).map(([category, categoryProducts]) => (
+                  <div key={category} className="space-y-3">
+                    <div className="flex items-center gap-2 border-l-4 border-[#2d6a4f] pl-2">
+                      <h4 className="text-sm font-bold text-[#2d6a4f] uppercase tracking-wide">{category}</h4>
+                      <span className="text-xs text-muted-foreground">（{categoryProducts.length}商品）</span>
+                    </div>
+                    {categoryProducts.map((product) => (
+                      <Card key={product.id} className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium text-base">{product.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {product.category} / ¥{product.price?.toLocaleString()} / {product.size}サイズ / {product.weight}kg
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button onClick={() => handleEditProduct(product)} variant="outline" size="sm">
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button onClick={() => handleDeleteProduct(product.id)} variant="outline" size="sm">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {products.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
