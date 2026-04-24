@@ -86,11 +86,21 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const recipients: Recipient[] = selectedCustomer?.recipients || [];
   const selectedRecipient = recipients.find((r) => r.id === selectedRecipientId);
 
+  // バリアント名から重量(kg)を推測（例: "2kg(3~4房位)" → 2）
+  const inferWeightFromName = (name: string): number => {
+    const m = name.match(/(\d+(?:\.\d+)?)\s*kg/i);
+    return m ? Number(m[1]) : 0;
+  };
+
   // 商品ごとの送料を計算（送り先エリア＋重量＋クール便）
   const calcItemShippingFee = (variantId: string): number => {
     const variant = productVariants.find((v) => v.id === variantId);
     if (!variant || !selectedRecipient) return 0;
-    const weightKg = variant.weight; // kg単位で保存
+    // weight 未設定(0)のときはバリアント名から推測
+    const weightKg = variant.weight && variant.weight > 0
+      ? variant.weight
+      : inferWeightFromName(variant.name);
+    if (weightKg <= 0) return 0;
     const prefecture = extractPrefecture(selectedRecipient.address);
     if (!prefecture) return 0;
     const area = getAreaByPrefecture(prefecture);
