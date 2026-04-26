@@ -67,21 +67,21 @@ function RecipientOrderHistory({ orders }: { orders: Order[] }) {
         <Package className="h-3 w-3" />発送履歴（{orders.length}件）
       </p>
       <div className="space-y-1 max-h-40 overflow-y-auto">
-        {orders.map((o) => (
-          <div key={o.id} className="text-xs flex items-center justify-between gap-2 bg-white/70 rounded px-2 py-1">
-            <div className="min-w-0 flex-1">
-              <span className="text-gray-500">{o.orderDate}</span>
-              <span className="mx-1 text-gray-300">·</span>
-              <span className="text-gray-800 truncate">
-                {o.products.map((p) => p.productName).join("、") || "—"}
-              </span>
+        {orders.map((o) => {
+          const productNames = o.products.map((p) => p.productName).join("、") || "—";
+          return (
+            <div key={o.id} className="text-xs bg-white/70 rounded px-2 py-1.5 space-y-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-gray-500 flex-shrink-0">{o.orderDate}</span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className="text-gray-700 font-medium">¥{o.amount.toLocaleString()}</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] ${statusClass(o.status)}`}>{o.status}</span>
+                </div>
+              </div>
+              <p className="text-gray-700 truncate" title={productNames}>{productNames}</p>
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-gray-600">¥{o.amount.toLocaleString()}</span>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] ${statusClass(o.status)}`}>{o.status}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -148,6 +148,7 @@ const CustomersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [kanaFilter, setKanaFilter] = useState<string>("全て");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [expandedRecipientIds, setExpandedRecipientIds] = useState<Set<string>>(new Set());
 
   // 送り主追加
   const [showAddCustomer, setShowAddCustomer] = useState(false);
@@ -211,6 +212,15 @@ const CustomersPage = () => {
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleRecipientExpand = (id: string) => {
+    setExpandedRecipientIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -567,67 +577,98 @@ const CustomersPage = () => {
                                 </div>
                               )}
 
-                              {/* 送り先一覧 */}
+                              {/* 送り先一覧（横長行表示） */}
                               {customer.recipients && customer.recipients.length > 0 ? (
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                     送り先一覧
                                   </p>
-                                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                    {customer.recipients.map((r) => (
-                                      <div
-                                        key={r.id}
-                                        className="bg-white border rounded-lg p-3 text-sm space-y-2 group"
-                                      >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div>
-                                            <p className="font-semibold text-gray-900">{r.name}</p>
-                                            {r.relation && (
-                                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#2d6a4f]/10 text-[#2d6a4f] mt-0.5 inline-block">
-                                                {r.relation}
-                                              </span>
-                                            )}
+                                  <div className="space-y-2">
+                                    {customer.recipients.map((r) => {
+                                      const recipientOrders = ordersByRecipient[r.id] ?? [];
+                                      const isOpen = expandedRecipientIds.has(r.id);
+                                      return (
+                                        <div key={r.id} className="bg-white border rounded-lg overflow-hidden">
+                                          {/* 横長メイン行 */}
+                                          <div className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50/60">
+                                            {/* 名前 + 続柄 */}
+                                            <div className="w-44 flex-shrink-0">
+                                              <p className="font-semibold text-gray-900 truncate" title={r.name}>{r.name}</p>
+                                              {r.relation && (
+                                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#2d6a4f]/10 text-[#2d6a4f] mt-0.5 inline-block">
+                                                  {r.relation}
+                                                </span>
+                                              )}
+                                            </div>
+                                            {/* 住所 */}
+                                            <div className="flex items-start gap-1.5 text-gray-600 text-xs flex-1 min-w-0">
+                                              <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
+                                              <div className="min-w-0">
+                                                <p className="text-gray-400">〒{r.postalCode}</p>
+                                                <p className="truncate" title={r.address}>{r.address}</p>
+                                              </div>
+                                            </div>
+                                            {/* 電話 / メール */}
+                                            <div className="w-48 flex-shrink-0 text-gray-600 text-xs">
+                                              <div className="flex items-center gap-1.5">
+                                                <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                                                <span className="truncate">{r.phone}</span>
+                                              </div>
+                                              {r.email && (
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                  <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                                                  <span className="truncate text-gray-400" title={r.email}>{r.email}</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                            {/* 発送履歴トグル */}
+                                            <div className="w-24 flex-shrink-0 text-center">
+                                              {recipientOrders.length > 0 ? (
+                                                <button
+                                                  className="inline-flex items-center gap-1 text-xs text-[#2d6a4f] hover:underline"
+                                                  onClick={() => toggleRecipientExpand(r.id)}
+                                                >
+                                                  <Package className="h-3 w-3" />
+                                                  {recipientOrders.length}件
+                                                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                                </button>
+                                              ) : (
+                                                <span className="text-xs text-gray-300">履歴なし</span>
+                                              )}
+                                            </div>
+                                            {/* 操作 */}
+                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                              <button
+                                                className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                                                onClick={() =>
+                                                  setEditingRecipient({
+                                                    recipient: { ...r },
+                                                    customerId: customer.id,
+                                                  })
+                                                }
+                                              >
+                                                <Edit className="h-3.5 w-3.5 text-gray-500" />
+                                              </button>
+                                              <button
+                                                className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                                                onClick={() => handleDeleteRecipient(customer.id, r.id)}
+                                              >
+                                                <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                                              </button>
+                                            </div>
                                           </div>
-                                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                            <button
-                                              className="p-1 rounded hover:bg-gray-100 transition-colors"
-                                              onClick={() =>
-                                                setEditingRecipient({
-                                                  recipient: { ...r },
-                                                  customerId: customer.id,
-                                                })
-                                              }
-                                            >
-                                              <Edit className="h-3.5 w-3.5 text-gray-500" />
-                                            </button>
-                                            <button
-                                              className="p-1 rounded hover:bg-red-50 transition-colors"
-                                              onClick={() => handleDeleteRecipient(customer.id, r.id)}
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                                            </button>
-                                          </div>
+                                          {/* 発送履歴展開 */}
+                                          {isOpen && recipientOrders.length > 0 && (
+                                            <div className="px-4 pb-3 bg-gray-50/60 border-t">
+                                              <RecipientOrderHistory orders={recipientOrders} />
+                                            </div>
+                                          )}
                                         </div>
-                                        <div className="flex items-start gap-1.5 text-gray-500">
-                                          <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                                          <div>
-                                            <p>〒{r.postalCode}</p>
-                                            <p>{r.address}</p>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-gray-500">
-                                          <Phone className="h-3.5 w-3.5 flex-shrink-0" />
-                                          <p>{r.phone}</p>
-                                        </div>
-                                        {r.email && (
-                                          <div className="flex items-center gap-1.5 text-gray-500">
-                                            <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                                            <p className="truncate">{r.email}</p>
-                                          </div>
-                                        )}
-                                        <RecipientOrderHistory orders={ordersByRecipient[r.id] ?? []} />
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
+                                  </div>
+                                          );
+                                    })}
                                   </div>
                                 </div>
                               ) : (
