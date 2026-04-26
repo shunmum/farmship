@@ -146,6 +146,7 @@ const CustomersPage = () => {
   const { lookup: lookupRecipientPostal } = usePostalCode();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [kanaFilter, setKanaFilter] = useState<string>("全て");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // 送り主追加
@@ -170,11 +171,42 @@ const CustomersPage = () => {
   // 削除確認
   const [deletingCustomerId, setDeletingCustomerId] = useState<string | null>(null);
 
+  // 五十音タブ
+  const KANA_TABS: { label: string; chars: string }[] = [
+    { label: "あ", chars: "あいうえおぁぃぅぇぉ" },
+    { label: "か", chars: "かきくけこがぎぐげご" },
+    { label: "さ", chars: "さしすせそざじずぜぞ" },
+    { label: "た", chars: "たちつてとだぢづでどっ" },
+    { label: "な", chars: "なにぬねの" },
+    { label: "は", chars: "はひふへほばびぶべぼぱぴぷぺぽ" },
+    { label: "ま", chars: "まみむめも" },
+    { label: "や", chars: "やゆよゃゅょ" },
+    { label: "ら", chars: "らりるれろ" },
+    { label: "わ", chars: "わをんゎ" },
+  ];
+
+  // カタカナ→ひらがな変換
+  const toHiragana = (s: string) =>
+    s.replace(/[\u30a1-\u30f6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+
+  const matchesKanaTab = (name: string, tabLabel: string) => {
+    if (tabLabel === "全て") return true;
+    if (tabLabel === "他") {
+      const first = toHiragana(name).charAt(0);
+      return !KANA_TABS.some((t) => t.chars.includes(first));
+    }
+    const tab = KANA_TABS.find((t) => t.label === tabLabel);
+    if (!tab) return true;
+    const first = toHiragana(name).charAt(0);
+    return tab.chars.includes(first);
+  };
+
   const filteredCustomers = customers.filter(
     (c) =>
-      c.name.includes(searchQuery) ||
-      c.phone.includes(searchQuery) ||
-      (c.email || "").includes(searchQuery)
+      (c.name.includes(searchQuery) ||
+        c.phone.includes(searchQuery) ||
+        (c.email || "").includes(searchQuery)) &&
+      matchesKanaTab(c.name, kanaFilter)
   );
 
   const toggleExpand = (id: string) => {
@@ -284,6 +316,27 @@ const CustomersPage = () => {
         </div>
 
         <p className="text-sm text-muted-foreground">{filteredCustomers.length}件の顧客</p>
+
+        {/* 五十音タブ */}
+        <div className="flex flex-wrap gap-1 border-b pb-2">
+          {["全て", ...KANA_TABS.map((t) => t.label), "他"].map((label) => {
+            const active = kanaFilter === label;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setKanaFilter(label)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  active
+                    ? "bg-[#2d6a4f] text-white font-semibold"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
 
         {/* 送り主テーブル */}
         <Card>
