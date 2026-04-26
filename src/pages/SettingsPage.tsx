@@ -76,8 +76,6 @@ const SettingsPage = () => {
             <TabsTrigger value="products">商品マスター</TabsTrigger>
             <TabsTrigger value="shipping">配送料金</TabsTrigger>
             <TabsTrigger value="public-form">公開フォーム</TabsTrigger>
-            <TabsTrigger value="print">印刷設定</TabsTrigger>
-            <TabsTrigger value="notify">通知設定</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -343,57 +341,8 @@ const SettingsPage = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="print" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>印刷設定</CardTitle>
-                <CardDescription>送り状・宛名シールの印刷設定</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="printer">デフォルトプリンター</Label>
-                  <Input id="printer" placeholder="プリンター名" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="paperSize">用紙サイズ</Label>
-                  <Input id="paperSize" placeholder="A4" />
-                </div>
-                <Button size="lg">保存</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="public-form" className="space-y-4">
             <PublicFormSettings />
-          </TabsContent>
-
-          <TabsContent value="notify" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>通知設定</CardTitle>
-                <CardDescription>メール通知の設定</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <div className="font-medium">配送完了通知</div>
-                    <div className="text-sm text-muted-foreground">
-                      配送が完了したら顧客にメールを送信
-                    </div>
-                  </div>
-                  <Button variant="outline">有効</Button>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <div className="font-medium">入金通知</div>
-                    <div className="text-sm text-muted-foreground">
-                      入金確認時に管理者にメールを送信
-                    </div>
-                  </div>
-                  <Button variant="outline">有効</Button>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
