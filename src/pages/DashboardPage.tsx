@@ -104,9 +104,9 @@ const DashboardPage = () => {
   const unpaidCount = seasonOrders.filter((o) => o.paymentStatus === "未入金").length;
   const orderCount = seasonOrders.length;
 
-  // 最新5件（orderDateの降順）
+  // 最新5件（連番の降順 = 新しい注文ほど上）
   const latestOrders = [...orders]
-    .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
+    .sort((a, b) => (orderNumberMap.get(b.id) ?? 0) - (orderNumberMap.get(a.id) ?? 0))
     .slice(0, 5);
 
   return (
@@ -176,42 +176,45 @@ const DashboardPage = () => {
         <CardContent className="p-0">
           {/* デスクトップ */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[1100px]">
               <thead>
                 <tr className="border-b text-left text-xs text-gray-500 uppercase tracking-wider">
-                  <th className="py-3 px-4 font-semibold w-12">No.</th>
-                  <th className="py-3 px-4 font-semibold">注文者名</th>
-                  <th className="py-3 px-4 font-semibold">商品</th>
-                  <th className="py-3 px-4 font-semibold">金額</th>
-                  <th className="py-3 px-4 font-semibold">種別</th>
-                  <th className="py-3 px-4 font-semibold">請求書</th>
-                  <th className="py-3 px-4 font-semibold">入金</th>
-                  <th className="py-3 px-4 font-semibold">配送</th>
-                  <th className="py-3 px-4 font-semibold">注文日</th>
+                  <th className="py-3 px-3 font-semibold w-14 whitespace-nowrap">No.</th>
+                  <th className="py-3 px-3 font-semibold whitespace-nowrap">注文者名</th>
+                  <th className="py-3 px-3 font-semibold">商品</th>
+                  <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">金額</th>
+                  <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">種別</th>
+                  <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">請求書</th>
+                  <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">入金</th>
+                  <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">配送</th>
+                  <th className="py-3 px-3 font-semibold whitespace-nowrap">注文日</th>
                 </tr>
               </thead>
               <tbody>
-                {latestOrders.map((order) => (
-                  <tr key={order.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-4 font-bold text-gray-400 text-sm">
-                      No.{orderNumberMap.get(order.id)}
-                    </td>
-                    <td className="py-4 px-4 font-medium text-gray-900">{order.customerName}</td>
-                    <td className="py-4 px-4 text-sm text-gray-600">
-                      {order.products.map((p) => `${p.productName}×${p.quantity}`).join(", ")}
-                    </td>
-                    <td className="py-4 px-4 font-semibold text-[#2d6a4f]">¥{order.amount.toLocaleString()}</td>
-                    <td className="py-4 px-4">
-                      {getCategoryBadge(order.orderCategory)}
-                    </td>
-                    <td className="py-4 px-4">
-                      {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
-                    </td>
-                    <td className="py-4 px-4">{getPaymentBadge(order.paymentStatus)}</td>
-                    <td className="py-4 px-4">{getStatusBadge(order.status)}</td>
-                    <td className="py-4 px-4 text-sm text-gray-500">{order.orderDate}</td>
-                  </tr>
-                ))}
+                {latestOrders.map((order) => {
+                  const productText = order.products.map((p) => `${p.productName}×${p.quantity}`).join(", ");
+                  return (
+                    <tr key={order.id} className="border-b hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-3 font-bold text-gray-400 text-sm whitespace-nowrap">
+                        No.{orderNumberMap.get(order.id)}
+                      </td>
+                      <td className="py-4 px-3 font-medium text-gray-900 whitespace-nowrap">{order.customerName}</td>
+                      <td className="py-4 px-3 text-sm text-gray-600 max-w-[280px]">
+                        <p className="truncate" title={productText}>{productText}</p>
+                      </td>
+                      <td className="py-4 px-3 font-semibold text-[#2d6a4f] text-right whitespace-nowrap">¥{order.amount.toLocaleString()}</td>
+                      <td className="py-4 px-3 text-center whitespace-nowrap">
+                        {getCategoryBadge(order.orderCategory)}
+                      </td>
+                      <td className="py-4 px-3 text-center whitespace-nowrap">
+                        {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
+                      </td>
+                      <td className="py-4 px-3 text-center whitespace-nowrap">{getPaymentBadge(order.paymentStatus)}</td>
+                      <td className="py-4 px-3 text-center whitespace-nowrap">{getStatusBadge(order.status)}</td>
+                      <td className="py-4 px-3 text-sm text-gray-500 whitespace-nowrap">{order.orderDate}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
