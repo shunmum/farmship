@@ -11,6 +11,7 @@ export interface Customer {
   address: string;
   postalCode: string;
   phone: string;
+  mobilePhone?: string;
   email: string;
   lastPurchaseDate: string;
   totalSpent: number;
@@ -25,6 +26,7 @@ export interface Recipient {
   address: string;
   postalCode: string;
   phone: string;
+  mobilePhone?: string;
   email?: string;
   relation?: string;
   notes?: string;

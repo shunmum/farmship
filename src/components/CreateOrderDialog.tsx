@@ -72,11 +72,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
 
   // 新規顧客登録フォーム
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: "", furigana: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+  const [newCustomer, setNewCustomer] = useState({ name: "", furigana: "", phone: "", mobilePhone: "", email: "", postalCode: "", address: "", memo: "" });
 
   // 新規送り先登録フォーム
   const [showNewRecipientForm, setShowNewRecipientForm] = useState(false);
-  const [newRecipient, setNewRecipient] = useState({ name: "", furigana: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+  const [newRecipient, setNewRecipient] = useState({ name: "", furigana: "", phone: "", mobilePhone: "", postalCode: "", address: "", relation: "", email: "" });
 
   // 商品選択アコーディオン開閉
   const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(new Set());
@@ -213,9 +213,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setOrderCategory("なし");
     setInvoiceType("");
     setShowNewCustomerForm(false);
-    setNewCustomer({ name: "", furigana: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+    setNewCustomer({ name: "", furigana: "", phone: "", mobilePhone: "", email: "", postalCode: "", address: "", memo: "" });
     setShowNewRecipientForm(false);
-    setNewRecipient({ name: "", furigana: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+    setNewRecipient({ name: "", furigana: "", phone: "", mobilePhone: "", postalCode: "", address: "", relation: "", email: "" });
     setCustomerSearch("");
     setOrderNote("");
   };
@@ -226,6 +226,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       name: newCustomer.name,
       furigana: newCustomer.furigana || undefined,
       phone: newCustomer.phone,
+      mobilePhone: newCustomer.mobilePhone || undefined,
       email: newCustomer.email,
       postalCode: newCustomer.postalCode,
       address: newCustomer.address,
@@ -239,7 +240,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setInvoiceType("");
     toast({ title: "✅ 顧客を登録しました", description: newCustomer.name });
     setShowNewCustomerForm(false);
-    setNewCustomer({ name: "", furigana: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+    setNewCustomer({ name: "", furigana: "", phone: "", mobilePhone: "", email: "", postalCode: "", address: "", memo: "" });
   };
 
   const handleAddNewRecipient = async () => {
@@ -249,6 +250,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       name: newRecipient.name,
       furigana: newRecipient.furigana || undefined,
       phone: newRecipient.phone,
+      mobilePhone: newRecipient.mobilePhone || undefined,
       postalCode: newRecipient.postalCode,
       address: newRecipient.address,
       relation: newRecipient.relation || undefined,
@@ -261,7 +263,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setSelectedRecipientId(data.id);
     toast({ title: "✅ 送り先を登録しました", description: newRecipient.name });
     setShowNewRecipientForm(false);
-    setNewRecipient({ name: "", furigana: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+    setNewRecipient({ name: "", furigana: "", phone: "", mobilePhone: "", postalCode: "", address: "", relation: "", email: "" });
   };
 
   // 同じ顧客で続けて入力（送り先・商品・配送情報をリセット）
@@ -274,7 +276,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setIsCool(false);
     setOrderCategory("なし");
     setShowNewRecipientForm(false);
-    setNewRecipient({ name: "", furigana: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+    setNewRecipient({ name: "", furigana: "", phone: "", mobilePhone: "", postalCode: "", address: "", relation: "", email: "" });
   };
 
   // ステップ1: 顧客選択
@@ -370,9 +372,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
               <div className="space-y-1">
                 <Label className="text-xs">電話番号 <span className="text-red-500">*</span></Label>
                 <Input
-                  placeholder="090-0000-0000"
+                  placeholder="03-0000-0000"
                   value={newCustomer.phone}
                   onChange={(e) => setNewCustomer((p) => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">携帯電話</Label>
+                <Input
+                  placeholder="090-0000-0000"
+                  value={newCustomer.mobilePhone}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, mobilePhone: e.target.value }))}
                 />
               </div>
             </div>
@@ -423,7 +433,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
                 variant="outline"
                 onClick={() => {
                   setShowNewCustomerForm(false);
-                  setNewCustomer({ name: "", furigana: "", phone: "", email: "", postalCode: "", address: "", memo: "" });
+                  setNewCustomer({ name: "", furigana: "", phone: "", mobilePhone: "", email: "", postalCode: "", address: "", memo: "" });
                 }}
               >
                 キャンセル
@@ -520,9 +530,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
               <div className="space-y-1">
                 <Label className="text-xs">電話番号 <span className="text-red-500">*</span></Label>
                 <Input
-                  placeholder="090-0000-0000"
+                  placeholder="03-0000-0000"
                   value={newRecipient.phone}
                   onChange={(e) => setNewRecipient((p) => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">携帯電話</Label>
+                <Input
+                  placeholder="090-0000-0000"
+                  value={newRecipient.mobilePhone}
+                  onChange={(e) => setNewRecipient((p) => ({ ...p, mobilePhone: e.target.value }))}
                 />
               </div>
             </div>
@@ -575,7 +593,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
                 variant="outline"
                 onClick={() => {
                   setShowNewRecipientForm(false);
-                  setNewRecipient({ name: "", furigana: "", phone: "", postalCode: "", address: "", relation: "", email: "" });
+                  setNewRecipient({ name: "", furigana: "", phone: "", mobilePhone: "", postalCode: "", address: "", relation: "", email: "" });
                 }}
               >
                 キャンセル

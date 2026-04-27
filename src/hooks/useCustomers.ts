@@ -10,6 +10,7 @@ function toCustomer(row: Record<string, unknown>, recipients: Recipient[] = []):
     name: row.name as string,
     furigana: (row.furigana as string) ?? undefined,
     phone: row.phone as string,
+    mobilePhone: (row.mobile_phone as string) ?? undefined,
     email: (row.email as string) ?? "",
     postalCode: row.postal_code as string,
     address: row.address as string,
@@ -28,6 +29,7 @@ function toRecipient(row: Record<string, unknown>): Recipient {
     name: row.name as string,
     furigana: (row.furigana as string) ?? undefined,
     phone: row.phone as string,
+    mobilePhone: (row.mobile_phone as string) ?? undefined,
     postalCode: row.postal_code as string,
     address: row.address as string,
     email: (row.email as string) ?? undefined,
@@ -96,6 +98,7 @@ export function useCustomers() {
           name: customer.name,
           furigana: customer.furigana || null,
           phone: customer.phone,
+          mobile_phone: customer.mobilePhone || null,
           email: customer.email || null,
           postal_code: customer.postalCode,
           address: customer.address,
@@ -122,6 +125,7 @@ export function useCustomers() {
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.furigana !== undefined) dbUpdates.furigana = updates.furigana || null;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+      if (updates.mobilePhone !== undefined) dbUpdates.mobile_phone = updates.mobilePhone || null;
       if (updates.email !== undefined) dbUpdates.email = updates.email || null;
       if (updates.postalCode !== undefined) dbUpdates.postal_code = updates.postalCode;
       if (updates.address !== undefined) dbUpdates.address = updates.address;
@@ -169,6 +173,7 @@ export function useCustomers() {
           name: recipient.name,
           furigana: recipient.furigana || null,
           phone: recipient.phone,
+          mobile_phone: recipient.mobilePhone || null,
           postal_code: recipient.postalCode,
           address: recipient.address,
           email: recipient.email || null,
@@ -193,6 +198,7 @@ export function useCustomers() {
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.furigana !== undefined) dbUpdates.furigana = updates.furigana || null;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+      if (updates.mobilePhone !== undefined) dbUpdates.mobile_phone = updates.mobilePhone || null;
       if (updates.postalCode !== undefined) dbUpdates.postal_code = updates.postalCode;
       if (updates.address !== undefined) dbUpdates.address = updates.address;
       if (updates.email !== undefined) dbUpdates.email = updates.email || null;

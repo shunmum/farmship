@@ -104,8 +104,8 @@ const getInvoiceBadge = (invoiceType?: InvoiceType) => {
   );
 };
 
-const EMPTY_CUSTOMER = { name: "", furigana: "", phone: "", email: "", postalCode: "", address: "", memo: "", invoiceType: "" as InvoiceType | "" };
-const EMPTY_RECIPIENT = { name: "", furigana: "", phone: "", postalCode: "", address: "", relation: "", email: "", notes: "" };
+const EMPTY_CUSTOMER = { name: "", furigana: "", phone: "", mobilePhone: "", email: "", postalCode: "", address: "", memo: "", invoiceType: "" as InvoiceType | "" };
+const EMPTY_RECIPIENT = { name: "", furigana: "", phone: "", mobilePhone: "", postalCode: "", address: "", relation: "", email: "", notes: "" };
 
 function FormField({
   label,
@@ -207,6 +207,7 @@ const CustomersPage = () => {
       (c.name.includes(searchQuery) ||
         (c.furigana || "").includes(searchQuery) ||
         c.phone.includes(searchQuery) ||
+        (c.mobilePhone || "").includes(searchQuery) ||
         (c.email || "").includes(searchQuery)) &&
       matchesKanaTab(c.furigana || c.name, kanaFilter)
   );
@@ -436,6 +437,7 @@ const CustomersPage = () => {
                               <div className="text-gray-500 text-xs space-y-0.5">
                                 <p>〒{r.postalCode}　{r.address}</p>
                                 <p>TEL: {r.phone}</p>
+                                {r.mobilePhone && <p>携帯: {r.mobilePhone}</p>}
                                 {r.email && <p>{r.email}</p>}
                               </div>
                               <RecipientOrderHistory orders={ordersByRecipient[r.id] ?? []} />
@@ -615,6 +617,12 @@ const CustomersPage = () => {
                                                 <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                                                 <span className="truncate">{r.phone}</span>
                                               </div>
+                                              {r.mobilePhone && (
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                  <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                                                  <span className="truncate">{r.mobilePhone}</span>
+                                                </div>
+                                              )}
                                               {r.email && (
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                   <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
@@ -725,6 +733,12 @@ const CustomersPage = () => {
               label="電話番号 *"
               value={newCustomer.phone}
               onChange={(v) => setNewCustomer({ ...newCustomer, phone: v })}
+              placeholder="例: 03-1234-5678"
+            />
+            <FormField
+              label="携帯電話"
+              value={newCustomer.mobilePhone}
+              onChange={(v) => setNewCustomer({ ...newCustomer, mobilePhone: v })}
               placeholder="例: 090-1234-5678"
             />
             <FormField
@@ -799,7 +813,8 @@ const CustomersPage = () => {
             <div className="grid gap-4 py-4">
               <FormField label="氏名" value={editingCustomer.name} onChange={(v) => setEditingCustomer({ ...editingCustomer, name: v })} />
               <FormField label="フリガナ" value={editingCustomer.furigana || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, furigana: v })} placeholder="例: タナカ ヨシオ" />
-              <FormField label="電話番号" value={editingCustomer.phone} onChange={(v) => setEditingCustomer({ ...editingCustomer, phone: v })} />
+              <FormField label="電話番号" value={editingCustomer.phone} onChange={(v) => setEditingCustomer({ ...editingCustomer, phone: v })} placeholder="例: 03-1234-5678" />
+              <FormField label="携帯電話" value={editingCustomer.mobilePhone || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, mobilePhone: v })} placeholder="例: 090-1234-5678" />
               <FormField label="メールアドレス" value={editingCustomer.email} onChange={(v) => setEditingCustomer({ ...editingCustomer, email: v })} type="email" />
               <FormField label="郵便番号" value={editingCustomer.postalCode || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, postalCode: v })} />
               <FormField label="住所" value={editingCustomer.address || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, address: v })} />
@@ -873,6 +888,7 @@ const CustomersPage = () => {
             </div>
             <FormField label="住所 *" value={newRecipient.address} onChange={(v) => setNewRecipient({ ...newRecipient, address: v })} placeholder="例: 東京都渋谷区道玄坂2-1-1" />
             <FormField label="電話番号 *" value={newRecipient.phone} onChange={(v) => setNewRecipient({ ...newRecipient, phone: v })} placeholder="例: 03-1111-2222" />
+            <FormField label="携帯電話" value={newRecipient.mobilePhone} onChange={(v) => setNewRecipient({ ...newRecipient, mobilePhone: v })} placeholder="例: 090-1111-2222" />
             <FormField label="メールアドレス" value={newRecipient.email} onChange={(v) => setNewRecipient({ ...newRecipient, email: v })} placeholder="例: hanako@example.com" type="email" />
             <FormField label="備考" value={newRecipient.notes || ""} onChange={(v) => setNewRecipient({ ...newRecipient, notes: v })} placeholder="例: 不在時は置き配可" />
           </div>
@@ -929,6 +945,13 @@ const CustomersPage = () => {
                 label="電話番号 *"
                 value={editingRecipient.recipient.phone}
                 onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, phone: v } })}
+                placeholder="例: 03-1111-2222"
+              />
+              <FormField
+                label="携帯電話"
+                value={editingRecipient.recipient.mobilePhone || ""}
+                onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, mobilePhone: v } })}
+                placeholder="例: 090-1111-2222"
               />
               <FormField
                 label="メールアドレス"
