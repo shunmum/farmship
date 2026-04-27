@@ -52,7 +52,8 @@ export function useCustomers() {
       const { data: customersData, error: customersError } = await supabase
         .from("customers")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("furigana", { ascending: true, nullsFirst: false })
+        .order("name", { ascending: true });
 
       if (customersError) throw customersError;
 
