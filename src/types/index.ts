@@ -7,6 +7,7 @@
 export interface Customer {
   id: string;
   name: string;
+  furigana?: string;
   address: string;
   postalCode: string;
   phone: string;
@@ -20,6 +21,7 @@ export interface Recipient {
   id: string;
   customerId?: string;
   name: string;
+  furigana?: string;
   address: string;
   postalCode: string;
   phone: string;

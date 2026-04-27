@@ -8,6 +8,7 @@ function toCustomer(row: Record<string, unknown>, recipients: Recipient[] = []):
   return {
     id: row.id as string,
     name: row.name as string,
+    furigana: (row.furigana as string) ?? undefined,
     phone: row.phone as string,
     email: (row.email as string) ?? "",
     postalCode: row.postal_code as string,
@@ -25,6 +26,7 @@ function toRecipient(row: Record<string, unknown>): Recipient {
     id: row.id as string,
     customerId: row.customer_id as string,
     name: row.name as string,
+    furigana: (row.furigana as string) ?? undefined,
     phone: row.phone as string,
     postalCode: row.postal_code as string,
     address: row.address as string,
@@ -92,6 +94,7 @@ export function useCustomers() {
         .insert({
           user_id: user?.id,
           name: customer.name,
+          furigana: customer.furigana || null,
           phone: customer.phone,
           email: customer.email || null,
           postal_code: customer.postalCode,
@@ -117,6 +120,7 @@ export function useCustomers() {
     try {
       const dbUpdates: Record<string, unknown> = {};
       if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.furigana !== undefined) dbUpdates.furigana = updates.furigana || null;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.email !== undefined) dbUpdates.email = updates.email || null;
       if (updates.postalCode !== undefined) dbUpdates.postal_code = updates.postalCode;
@@ -163,6 +167,7 @@ export function useCustomers() {
           user_id: user?.id,
           customer_id: recipient.customerId!,
           name: recipient.name,
+          furigana: recipient.furigana || null,
           phone: recipient.phone,
           postal_code: recipient.postalCode,
           address: recipient.address,
@@ -186,6 +191,7 @@ export function useCustomers() {
     try {
       const dbUpdates: Record<string, unknown> = {};
       if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.furigana !== undefined) dbUpdates.furigana = updates.furigana || null;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.postalCode !== undefined) dbUpdates.postal_code = updates.postalCode;
       if (updates.address !== undefined) dbUpdates.address = updates.address;

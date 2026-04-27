@@ -104,8 +104,8 @@ const getInvoiceBadge = (invoiceType?: InvoiceType) => {
   );
 };
 
-const EMPTY_CUSTOMER = { name: "", phone: "", email: "", postalCode: "", address: "", memo: "", invoiceType: "" as InvoiceType | "" };
-const EMPTY_RECIPIENT = { name: "", phone: "", postalCode: "", address: "", relation: "", email: "", notes: "" };
+const EMPTY_CUSTOMER = { name: "", furigana: "", phone: "", email: "", postalCode: "", address: "", memo: "", invoiceType: "" as InvoiceType | "" };
+const EMPTY_RECIPIENT = { name: "", furigana: "", phone: "", postalCode: "", address: "", relation: "", email: "", notes: "" };
 
 function FormField({
   label,
@@ -205,9 +205,10 @@ const CustomersPage = () => {
   const filteredCustomers = customers.filter(
     (c) =>
       (c.name.includes(searchQuery) ||
+        (c.furigana || "").includes(searchQuery) ||
         c.phone.includes(searchQuery) ||
         (c.email || "").includes(searchQuery)) &&
-      matchesKanaTab(c.name, kanaFilter)
+      matchesKanaTab(c.furigana || c.name, kanaFilter)
   );
 
   const toggleExpand = (id: string) => {
@@ -715,6 +716,12 @@ const CustomersPage = () => {
               placeholder="例: 田中 義雄"
             />
             <FormField
+              label="フリガナ"
+              value={newCustomer.furigana}
+              onChange={(v) => setNewCustomer({ ...newCustomer, furigana: v })}
+              placeholder="例: タナカ ヨシオ"
+            />
+            <FormField
               label="電話番号 *"
               value={newCustomer.phone}
               onChange={(v) => setNewCustomer({ ...newCustomer, phone: v })}
@@ -791,6 +798,7 @@ const CustomersPage = () => {
           {editingCustomer && (
             <div className="grid gap-4 py-4">
               <FormField label="氏名" value={editingCustomer.name} onChange={(v) => setEditingCustomer({ ...editingCustomer, name: v })} />
+              <FormField label="フリガナ" value={editingCustomer.furigana || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, furigana: v })} placeholder="例: タナカ ヨシオ" />
               <FormField label="電話番号" value={editingCustomer.phone} onChange={(v) => setEditingCustomer({ ...editingCustomer, phone: v })} />
               <FormField label="メールアドレス" value={editingCustomer.email} onChange={(v) => setEditingCustomer({ ...editingCustomer, email: v })} type="email" />
               <FormField label="郵便番号" value={editingCustomer.postalCode || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, postalCode: v })} />
@@ -847,6 +855,7 @@ const CustomersPage = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <FormField label="氏名 *" value={newRecipient.name} onChange={(v) => setNewRecipient({ ...newRecipient, name: v })} placeholder="例: 田中 花子" />
+            <FormField label="フリガナ" value={newRecipient.furigana} onChange={(v) => setNewRecipient({ ...newRecipient, furigana: v })} placeholder="例: タナカ ハナコ" />
             <FormField label="続柄・関係" value={newRecipient.relation} onChange={(v) => setNewRecipient({ ...newRecipient, relation: v })} placeholder="例: 娘、友人" />
             <div className="grid gap-1.5">
               <Label>郵便番号 *</Label>
@@ -894,6 +903,12 @@ const CustomersPage = () => {
                 label="氏名 *"
                 value={editingRecipient.recipient.name}
                 onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, name: v } })}
+              />
+              <FormField
+                label="フリガナ"
+                value={editingRecipient.recipient.furigana || ""}
+                onChange={(v) => setEditingRecipient({ ...editingRecipient, recipient: { ...editingRecipient.recipient, furigana: v } })}
+                placeholder="例: タナカ ハナコ"
               />
               <FormField
                 label="続柄・関係"
