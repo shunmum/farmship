@@ -11,8 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2, PartyPopper, UserPlus, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2, PartyPopper, UserPlus, ChevronDown, ChevronUp, Search, ChevronsUpDown, Check } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useOrders } from "@/hooks/useOrders";
 import { useProducts } from "@/hooks/useProducts";
@@ -62,6 +65,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedRecipientId, setSelectedRecipientId] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [orderNote, setOrderNote] = useState("");
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [deliveryDate, setDeliveryDate] = useState("");
@@ -288,46 +292,74 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       </div>
       <div className="space-y-2">
         <Label>顧客（送り主）</Label>
-        <Select value={selectedCustomerId} onValueChange={(v) => {
-          setSelectedCustomerId(v);
-          setSelectedRecipientId("");
-          const c = customers.find((c) => c.id === v);
-          setInvoiceType(c?.invoiceType || "");
-        }}>
-          <SelectTrigger>
-            <SelectValue placeholder="顧客を選択してください" />
-          </SelectTrigger>
-          <SelectContent>
-            <div className="p-2 border-b">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                <input
-                  className="w-full pl-7 pr-2 py-1.5 text-sm border rounded outline-none focus:ring-1 focus:ring-[#2d6a4f]"
-                  placeholder="名前・電話番号で検索..."
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  onKeyDown={(e) => e.stopPropagation()}
-                />
-              </div>
-            </div>
-            {customers
-              .filter((c) =>
-                customerSearch === "" ||
-                c.name.includes(customerSearch) ||
-                c.phone.includes(customerSearch)
-              )
-              .map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}（{c.phone}）</SelectItem>
-              ))}
-            {customers.filter((c) =>
-              customerSearch === "" ||
-              c.name.includes(customerSearch) ||
-              c.phone.includes(customerSearch)
-            ).length === 0 && (
-              <div className="py-3 text-center text-sm text-gray-400">該当なし</div>
-            )}
-          </SelectContent>
-        </Select>
+        <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={customerPickerOpen}
+              className="w-full justify-between font-normal"
+            >
+              {selectedCustomerId
+                ? customers.find((c) => c.id === selectedCustomerId)?.name ?? "顧客を選択してください"
+                : "顧客を選択してください"}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+            <Command
+              filter={(value, search) => {
+                const c = customers.find((x) => x.id === value);
+                if (!c) return 0;
+                const haystack = [
+                  c.name,
+                  c.furigana ?? "",
+                  c.groupName ?? "",
+                  c.phone ?? "",
+                  c.mobilePhone ?? "",
+                ].join(" ").toLowerCase();
+                return haystack.includes(search.toLowerCase()) ? 1 : 0;
+              }}
+            >
+              <CommandInput placeholder="氏名・フリガナ・電話で検索..." />
+              <CommandList className="max-h-72">
+                <CommandEmpty>該当する顧客がいません</CommandEmpty>
+                <CommandGroup>
+                  {customers.map((c) => (
+                    <CommandItem
+                      key={c.id}
+                      value={c.id}
+                      onSelect={(currentValue) => {
+                        setSelectedCustomerId(currentValue === selectedCustomerId ? "" : currentValue);
+                        setSelectedRecipientId("");
+                        const cust = customers.find((x) => x.id === currentValue);
+                        setInvoiceType(cust?.invoiceType || "");
+                        setCustomerPickerOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedCustomerId === c.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate">{c.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {c.furigana && <span>{c.furigana}・</span>}
+                          {c.phone || c.mobilePhone || ""}
+                        </p>
+                      </div>
+                      {c.groupName && (
+                        <span className="ml-2 text-xs text-pink-600 flex-shrink-0">{c.groupName}</span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
       {selectedCustomer && !showNewCustomerForm && (
         <div className="bg-[#2d6a4f]/5 p-4 rounded-lg text-sm space-y-1">
