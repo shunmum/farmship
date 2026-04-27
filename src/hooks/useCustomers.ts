@@ -9,6 +9,7 @@ function toCustomer(row: Record<string, unknown>, recipients: Recipient[] = []):
     id: row.id as string,
     name: row.name as string,
     furigana: (row.furigana as string) ?? undefined,
+    groupName: (row.group_name as string) ?? undefined,
     phone: row.phone as string,
     mobilePhone: (row.mobile_phone as string) ?? undefined,
     email: (row.email as string) ?? "",
@@ -97,6 +98,7 @@ export function useCustomers() {
           user_id: user?.id,
           name: customer.name,
           furigana: customer.furigana || null,
+          group_name: customer.groupName || null,
           phone: customer.phone,
           mobile_phone: customer.mobilePhone || null,
           email: customer.email || null,
@@ -124,6 +126,7 @@ export function useCustomers() {
       const dbUpdates: Record<string, unknown> = {};
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.furigana !== undefined) dbUpdates.furigana = updates.furigana || null;
+      if (updates.groupName !== undefined) dbUpdates.group_name = updates.groupName || null;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.mobilePhone !== undefined) dbUpdates.mobile_phone = updates.mobilePhone || null;
       if (updates.email !== undefined) dbUpdates.email = updates.email || null;

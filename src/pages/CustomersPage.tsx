@@ -104,7 +104,7 @@ const getInvoiceBadge = (invoiceType?: InvoiceType) => {
   );
 };
 
-const EMPTY_CUSTOMER = { name: "", furigana: "", phone: "", mobilePhone: "", email: "", postalCode: "", address: "", memo: "", invoiceType: "" as InvoiceType | "" };
+const EMPTY_CUSTOMER = { name: "", furigana: "", groupName: "", phone: "", mobilePhone: "", email: "", postalCode: "", address: "", memo: "", invoiceType: "" as InvoiceType | "" };
 const EMPTY_RECIPIENT = { name: "", furigana: "", phone: "", mobilePhone: "", postalCode: "", address: "", relation: "", email: "", notes: "" };
 
 function FormField({
@@ -202,10 +202,20 @@ const CustomersPage = () => {
     return tab.chars.includes(first);
   };
 
+  // グループ名 → 同じグループの顧客一覧
+  const customersByGroup = customers.reduce<Record<string, Customer[]>>((acc, c) => {
+    if (c.groupName) {
+      if (!acc[c.groupName]) acc[c.groupName] = [];
+      acc[c.groupName].push(c);
+    }
+    return acc;
+  }, {});
+
   const filteredCustomers = customers.filter(
     (c) =>
       (c.name.includes(searchQuery) ||
         (c.furigana || "").includes(searchQuery) ||
+        (c.groupName || "").includes(searchQuery) ||
         c.phone.includes(searchQuery) ||
         (c.mobilePhone || "").includes(searchQuery) ||
         (c.email || "").includes(searchQuery)) &&
@@ -365,9 +375,17 @@ const CustomersPage = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-gray-900">{customer.name}</p>
+                        {customer.groupName && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 border border-pink-200">
+                            {customer.groupName}
+                          </span>
+                        )}
                         {customer.memo && <StickyNote className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />}
                         {getInvoiceBadge(customer.invoiceType)}
                       </div>
+                      {customer.furigana && (
+                        <p className="text-xs text-gray-400 mt-0.5">{customer.furigana}</p>
+                      )}
                       <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
                         <Phone className="h-3.5 w-3.5" />
                         {customer.phone}
@@ -410,6 +428,26 @@ const CustomersPage = () => {
                           <div>
                             <p className="text-xs font-semibold text-yellow-700 mb-0.5">メモ</p>
                             <p className="text-gray-700 whitespace-pre-wrap">{customer.memo}</p>
+                          </div>
+                        </div>
+                      )}
+                      {customer.groupName && (customersByGroup[customer.groupName]?.length ?? 0) > 1 && (
+                        <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 text-sm mt-3">
+                          <p className="text-xs font-semibold text-pink-700 mb-1.5">
+                            {customer.groupName} の他のメンバー
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {customersByGroup[customer.groupName]
+                              .filter((c) => c.id !== customer.id)
+                              .map((c) => (
+                                <button
+                                  key={c.id}
+                                  className="text-xs px-2 py-0.5 rounded-full bg-white border border-pink-200 text-pink-700"
+                                  onClick={(e) => { e.stopPropagation(); toggleExpand(c.id); }}
+                                >
+                                  {c.name}
+                                </button>
+                              ))}
                           </div>
                         </div>
                       )}
@@ -483,6 +521,7 @@ const CustomersPage = () => {
                     <>
                       <tr
                         key={customer.id}
+                        id={`customer-${customer.id}`}
                         className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => toggleExpand(customer.id)}
                       >
@@ -494,12 +533,20 @@ const CustomersPage = () => {
                           )}
                         </td>
                         <td className="py-4 px-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-semibold text-gray-900">{customer.name}</p>
+                            {customer.groupName && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 border border-pink-200">
+                                {customer.groupName}
+                              </span>
+                            )}
                             {customer.memo && (
                               <StickyNote className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" title={customer.memo} />
                             )}
                           </div>
+                          {customer.furigana && (
+                            <p className="text-xs text-gray-400 mt-0.5">{customer.furigana}</p>
+                          )}
                         </td>
                         <td className="py-4 px-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1.5">
@@ -577,6 +624,35 @@ const CustomersPage = () => {
                                   {customer.invoiceType === "郵送する" && <Send className="h-4 w-4 text-blue-500" />}
                                   {customer.invoiceType === "メールで送る" && <Mail className="h-4 w-4 text-green-500" />}
                                   <span>請求書: <strong>{customer.invoiceType}</strong></span>
+                                </div>
+                              )}
+
+                              {/* 同じグループの他の顧客 */}
+                              {customer.groupName && (customersByGroup[customer.groupName]?.length ?? 0) > 1 && (
+                                <div className="flex items-start gap-2 bg-pink-50 border border-pink-200 rounded-lg p-3 text-sm">
+                                  <span className="text-xs font-semibold text-pink-700 flex-shrink-0">
+                                    {customer.groupName} の他のメンバー:
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {customersByGroup[customer.groupName]
+                                      .filter((c) => c.id !== customer.id)
+                                      .map((c) => (
+                                        <button
+                                          key={c.id}
+                                          className="text-xs px-2 py-0.5 rounded-full bg-white border border-pink-200 text-pink-700 hover:bg-pink-100"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleExpand(c.id);
+                                            // スクロール
+                                            setTimeout(() => {
+                                              document.getElementById(`customer-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                            }, 50);
+                                          }}
+                                        >
+                                          {c.name}
+                                        </button>
+                                      ))}
+                                  </div>
                                 </div>
                               )}
 
@@ -730,6 +806,12 @@ const CustomersPage = () => {
               placeholder="例: タナカ ヨシオ"
             />
             <FormField
+              label="グループ（家族・夫婦などのまとめ名）"
+              value={newCustomer.groupName}
+              onChange={(v) => setNewCustomer({ ...newCustomer, groupName: v })}
+              placeholder="例: 田中家"
+            />
+            <FormField
               label="電話番号 *"
               value={newCustomer.phone}
               onChange={(v) => setNewCustomer({ ...newCustomer, phone: v })}
@@ -813,6 +895,7 @@ const CustomersPage = () => {
             <div className="grid gap-4 py-4">
               <FormField label="氏名" value={editingCustomer.name} onChange={(v) => setEditingCustomer({ ...editingCustomer, name: v })} />
               <FormField label="フリガナ" value={editingCustomer.furigana || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, furigana: v })} placeholder="例: タナカ ヨシオ" />
+              <FormField label="グループ（家族・夫婦などのまとめ名）" value={editingCustomer.groupName || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, groupName: v })} placeholder="例: 田中家" />
               <FormField label="電話番号" value={editingCustomer.phone} onChange={(v) => setEditingCustomer({ ...editingCustomer, phone: v })} placeholder="例: 03-1234-5678" />
               <FormField label="携帯電話" value={editingCustomer.mobilePhone || ""} onChange={(v) => setEditingCustomer({ ...editingCustomer, mobilePhone: v })} placeholder="例: 090-1234-5678" />
               <FormField label="メールアドレス" value={editingCustomer.email} onChange={(v) => setEditingCustomer({ ...editingCustomer, email: v })} type="email" />

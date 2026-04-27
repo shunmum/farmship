@@ -8,6 +8,7 @@ export interface Customer {
   id: string;
   name: string;
   furigana?: string;
+  groupName?: string;
   address: string;
   postalCode: string;
   phone: string;
