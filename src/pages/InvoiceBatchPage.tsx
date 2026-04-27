@@ -16,8 +16,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
-import { FileDown, Calendar, Printer, Eye, Settings } from "lucide-react";
+import { FileDown, Calendar, Printer, Eye, Settings, ChevronsUpDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -533,6 +547,7 @@ const InvoiceBatchPage = () => {
   const { farmInfo } = useFarmInfo();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const today = new Date().toISOString().split("T")[0];
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
@@ -663,16 +678,71 @@ const InvoiceBatchPage = () => {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>送り主</Label>
-                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="顧客を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={customerPickerOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedCustomerId
+                        ? customers.find((c) => c.id === selectedCustomerId)?.name ?? "顧客を選択"
+                        : "顧客を選択"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command
+                      filter={(value, search) => {
+                        // value には id が入る。検索対象は氏名・フリガナ・電話・グループ名
+                        const c = customers.find((x) => x.id === value);
+                        if (!c) return 0;
+                        const haystack = [
+                          c.name,
+                          c.furigana ?? "",
+                          c.groupName ?? "",
+                          c.phone ?? "",
+                          c.mobilePhone ?? "",
+                        ].join(" ").toLowerCase();
+                        return haystack.includes(search.toLowerCase()) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput placeholder="氏名・フリガナで検索..." />
+                      <CommandList className="max-h-72">
+                        <CommandEmpty>該当する顧客がいません</CommandEmpty>
+                        <CommandGroup>
+                          {customers.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.id}
+                              onSelect={(currentValue) => {
+                                setSelectedCustomerId(currentValue === selectedCustomerId ? "" : currentValue);
+                                setCustomerPickerOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedCustomerId === c.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate">{c.name}</p>
+                                {c.furigana && (
+                                  <p className="text-xs text-muted-foreground truncate">{c.furigana}</p>
+                                )}
+                              </div>
+                              {c.groupName && (
+                                <span className="ml-2 text-xs text-pink-600 flex-shrink-0">{c.groupName}</span>
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1">
