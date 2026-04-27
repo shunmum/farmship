@@ -15,14 +15,19 @@ import { useCustomers } from "@/hooks/useCustomers";
 
 const CSV_HEADERS = [
   "送り主名",
+  "送り主フリガナ",
+  "送り主グループ",
   "送り主電話",
+  "送り主携帯電話",
   "送り主メール",
   "送り主郵便番号",
   "送り主住所",
   "送り主メモ",
   "送り先名",
+  "送り先フリガナ",
   "続柄",
   "送り先電話",
+  "送り先携帯電話",
   "送り先郵便番号",
   "送り先住所",
   "送り先メール",
@@ -31,9 +36,9 @@ const CSV_HEADERS = [
 
 const TEMPLATE_CSV = [
   CSV_HEADERS.join(","),
-  "田中太郎,090-1234-5678,tanaka@example.com,100-0001,東京都千代田区丸の内1-1-1,VIP顧客,山田花子,娘,080-9876-5432,150-0001,東京都渋谷区神宮前3-3-3,hanako@example.com,不在時は置き配",
-  "田中太郎,090-1234-5678,tanaka@example.com,100-0001,東京都千代田区丸の内1-1-1,VIP顧客,佐藤次郎,友人,070-1111-2222,810-0001,福岡県福岡市中央区天神5-5-5,,",
-  "鈴木一郎,03-1234-5678,,530-0001,大阪府大阪市北区梅田2-2-2,,,,,,,,",
+  "田中太郎,タナカ タロウ,田中家,03-1234-5678,090-1234-5678,tanaka@example.com,100-0001,東京都千代田区丸の内1-1-1,VIP顧客,山田花子,ヤマダ ハナコ,娘,03-9876-5432,080-9876-5432,150-0001,東京都渋谷区神宮前3-3-3,hanako@example.com,不在時は置き配",
+  "田中太郎,タナカ タロウ,田中家,03-1234-5678,090-1234-5678,tanaka@example.com,100-0001,東京都千代田区丸の内1-1-1,VIP顧客,佐藤次郎,サトウ ジロウ,友人,,070-1111-2222,810-0001,福岡県福岡市中央区天神5-5-5,,",
+  "鈴木一郎,スズキ イチロウ,,03-1234-5678,,,530-0001,大阪府大阪市北区梅田2-2-2,,,,,,,,,,",
 ].join("\n");
 
 type Row = Record<string, string>;
@@ -41,7 +46,10 @@ type Row = Record<string, string>;
 interface ParsedGroup {
   customer: {
     name: string;
+    furigana: string;
+    groupName: string;
     phone: string;
+    mobilePhone: string;
     email: string;
     postalCode: string;
     address: string;
@@ -49,8 +57,10 @@ interface ParsedGroup {
   };
   recipients: Array<{
     name: string;
+    furigana: string;
     relation: string;
     phone: string;
+    mobilePhone: string;
     postalCode: string;
     address: string;
     email: string;
@@ -67,6 +77,7 @@ function parseCsv(text: string): { groups: ParsedGroup[]; errors: string[] } {
   data.forEach((row, idx) => {
     const customerName = (row["送り主名"] ?? "").trim();
     const customerPhone = (row["送り主電話"] ?? "").trim();
+    const customerMobile = (row["送り主携帯電話"] ?? "").trim();
     const customerPostal = (row["送り主郵便番号"] ?? "").trim();
     const customerAddress = (row["送り主住所"] ?? "").trim();
 
@@ -74,21 +85,18 @@ function parseCsv(text: string): { groups: ParsedGroup[]; errors: string[] } {
       errors.push(`${idx + 2}行目: 送り主名が空です`);
       return;
     }
-    if (!customerPhone) {
-      errors.push(`${idx + 2}行目: 送り主電話が空です`);
-      return;
-    }
-    if (!customerPostal || !customerAddress) {
-      errors.push(`${idx + 2}行目: 送り主郵便番号/住所が空です`);
-      return;
-    }
+    // 名前さえあれば登録可能（電話・住所は後から補完できる）
 
-    const key = `${customerName}__${customerPhone}`;
+    // キーは名前+電話or携帯（どちらでも統一できる）
+    const key = `${customerName}__${customerPhone || customerMobile}`;
     if (!groupMap.has(key)) {
       groupMap.set(key, {
         customer: {
           name: customerName,
+          furigana: (row["送り主フリガナ"] ?? "").trim(),
+          groupName: (row["送り主グループ"] ?? "").trim(),
           phone: customerPhone,
+          mobilePhone: customerMobile,
           email: (row["送り主メール"] ?? "").trim(),
           postalCode: customerPostal,
           address: customerAddress,
@@ -101,16 +109,23 @@ function parseCsv(text: string): { groups: ParsedGroup[]; errors: string[] } {
     const recName = (row["送り先名"] ?? "").trim();
     if (recName) {
       const recPhone = (row["送り先電話"] ?? "").trim();
+      const recMobile = (row["送り先携帯電話"] ?? "").trim();
       const recPostal = (row["送り先郵便番号"] ?? "").trim();
       const recAddress = (row["送り先住所"] ?? "").trim();
-      if (!recPhone || !recPostal || !recAddress) {
-        errors.push(`${idx + 2}行目: 送り先の電話/郵便番号/住所が空です`);
+      if (!recPhone && !recMobile) {
+        errors.push(`${idx + 2}行目: 送り先の電話または携帯番号のどちらかが必要です`);
+        return;
+      }
+      if (!recPostal || !recAddress) {
+        errors.push(`${idx + 2}行目: 送り先の郵便番号/住所が空です`);
         return;
       }
       groupMap.get(key)!.recipients.push({
         name: recName,
+        furigana: (row["送り先フリガナ"] ?? "").trim(),
         relation: (row["続柄"] ?? "").trim(),
         phone: recPhone,
+        mobilePhone: recMobile,
         postalCode: recPostal,
         address: recAddress,
         email: (row["送り先メール"] ?? "").trim(),
