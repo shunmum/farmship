@@ -13,6 +13,7 @@ export interface FarmInfo {
   bankHolder: string;
   paymentDueDays: number;
   taxRate: number;
+  taxMode: "外税" | "内税"; // 外税 = 商品価格に消費税を加算 / 内税 = 商品価格に税込
   invoiceNote: string;
   invoicePrefix: string;
   invoiceRegistrationNumber: string;
@@ -31,6 +32,7 @@ const DEFAULT_FARM_INFO: FarmInfo = {
   bankHolder: "",
   paymentDueDays: 30,
   taxRate: 10,
+  taxMode: "外税",
   invoiceNote: "上記の通りご請求申し上げます。\nお手数ですが、期日までに上記口座へお振込みをお願いいたします。",
   invoicePrefix: "INV",
   invoiceRegistrationNumber: "",

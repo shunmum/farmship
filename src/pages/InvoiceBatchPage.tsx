@@ -265,8 +265,34 @@ function buildBankInfo(farmInfo: FarmInfo) {
   ].filter(Boolean).join("<br>");
 }
 
-function buildSummaryHTML(subtotal: number, tax: number, total: number, taxRate: number, labelTotal: string) {
+function buildSummaryHTML(
+  subtotal: number,
+  tax: number,
+  total: number,
+  taxRate: number,
+  labelTotal: string,
+  taxMode: "外税" | "内税" = "外税"
+) {
   const fmt = (n: number) => `¥ ${n.toLocaleString()}`;
+  if (taxMode === "内税") {
+    // 内税: 商品価格に消費税を含む。合計 = 小計 / 内 消費税
+    return `
+    <div class="summary">
+      <div class="summary-row">
+        <span class="s-label">小計（税込）</span>
+        <span class="s-val">${fmt(total)}</span>
+      </div>
+      <div class="summary-row">
+        <span class="s-label">（うち消費税 ${taxRate}%）</span>
+        <span class="s-val">${fmt(tax)}</span>
+      </div>
+      <div class="summary-row total-row">
+        <span class="s-label">${labelTotal}</span>
+        <span class="s-val">${fmt(total)}</span>
+      </div>
+    </div>`;
+  }
+  // 外税
   return `
   <div class="summary">
     <div class="summary-row">
@@ -284,6 +310,17 @@ function buildSummaryHTML(subtotal: number, tax: number, total: number, taxRate:
   </div>`;
 }
 
+function calcTax(subtotal: number, taxRate: number, taxMode: "外税" | "内税"): { tax: number; total: number; subtotalExcl: number } {
+  if (taxMode === "内税") {
+    // 内税: subtotal は税込合計とみなす
+    const tax = Math.floor(subtotal * taxRate / (100 + taxRate));
+    return { tax, total: subtotal, subtotalExcl: subtotal - tax };
+  }
+  // 外税
+  const tax = Math.floor(subtotal * taxRate / 100);
+  return { tax, total: subtotal + tax, subtotalExcl: subtotal };
+}
+
 // ---- 請求書HTML生成 ----
 function generateInvoiceHTML(params: DocParams): string {
   const { farmInfo, customer, orders, productVariants, invoiceNumber, issueDate, dueDate } = params;
@@ -291,8 +328,7 @@ function generateInvoiceHTML(params: DocParams): string {
 
   const lineItems = buildLineItems(orders, productVariants);
   const subtotal = lineItems.reduce((s, i) => s + i.amount, 0);
-  const tax = Math.floor(subtotal * farmInfo.taxRate / 100);
-  const total = subtotal + tax;
+  const { tax, total } = calcTax(subtotal, farmInfo.taxRate, farmInfo.taxMode);
 
   const itemRows = buildGroupedItemRows(lineItems, fmt);
 
@@ -350,7 +386,7 @@ function generateInvoiceHTML(params: DocParams): string {
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
-  ${buildSummaryHTML(subtotal, tax, total, farmInfo.taxRate, "合計請求額")}
+  ${buildSummaryHTML(subtotal, tax, total, farmInfo.taxRate, "合計請求額", farmInfo.taxMode)}
   ${noteLines ? `<div class="note-block">${noteLines}</div>` : ""}
   <div class="footer"><div>${farmInfo.name}</div><div>${invoiceNumber}</div></div>
 </div></body></html>`;
@@ -363,8 +399,7 @@ function generateInvoiceDeliveryNoteHTML(params: DocParams): string {
 
   const lineItems = buildLineItems(orders, productVariants);
   const subtotal = lineItems.reduce((s, i) => s + i.amount, 0);
-  const tax = Math.floor(subtotal * farmInfo.taxRate / 100);
-  const total = subtotal + tax;
+  const { tax, total } = calcTax(subtotal, farmInfo.taxRate, farmInfo.taxMode);
 
   const itemRows = buildGroupedItemRows(lineItems, fmt);
 
@@ -447,7 +482,7 @@ function generateInvoiceDeliveryNoteHTML(params: DocParams): string {
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
-  ${buildSummaryHTML(subtotal, tax, total, farmInfo.taxRate, "合計請求額")}
+  ${buildSummaryHTML(subtotal, tax, total, farmInfo.taxRate, "合計請求額", farmInfo.taxMode)}
   ${noteLines ? `<div class="note-block">${noteLines}</div>` : ""}
   <div class="footer"><div>${farmInfo.name}</div><div>${invoiceNumber}</div></div>
 </div></body></html>`;
@@ -460,8 +495,7 @@ function generateReceiptHTML(params: DocParams): string {
 
   const lineItems = buildLineItems(orders, productVariants);
   const subtotal = lineItems.reduce((s, i) => s + i.amount, 0);
-  const tax = Math.floor(subtotal * farmInfo.taxRate / 100);
-  const total = subtotal + tax;
+  const { tax, total } = calcTax(subtotal, farmInfo.taxRate, farmInfo.taxMode);
 
   const regLine = farmInfo.invoiceRegistrationNumber
     ? `<div class="invoice-reg">適格請求書発行事業者 登録番号：${farmInfo.invoiceRegistrationNumber}</div>`
@@ -532,7 +566,7 @@ function generateReceiptHTML(params: DocParams): string {
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
-  ${buildSummaryHTML(subtotal, tax, total, farmInfo.taxRate, "領収金額")}
+  ${buildSummaryHTML(subtotal, tax, total, farmInfo.taxRate, "領収金額", farmInfo.taxMode)}
   <div class="footer"><div>${farmInfo.name}</div><div>${invoiceNumber}</div></div>
 </div></body></html>`;
 }

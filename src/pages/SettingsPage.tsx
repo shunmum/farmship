@@ -196,7 +196,7 @@ const SettingsPage = () => {
                 <CardTitle className="text-lg sm:text-xl">請求書オプション</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label>消費税率（%）</Label>
                     <Input
@@ -204,6 +204,21 @@ const SettingsPage = () => {
                       value={farmForm.taxRate}
                       onChange={(e) => setFarmForm({ ...farmForm, taxRate: Number(e.target.value) })}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>消費税の扱い</Label>
+                    <Select
+                      value={farmForm.taxMode}
+                      onValueChange={(v) => setFarmForm({ ...farmForm, taxMode: v as "外税" | "内税" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="外税">外税（価格に消費税を加算）</SelectItem>
+                        <SelectItem value="内税">内税（価格に消費税を含む）</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>支払期日（発行から何日後）</Label>
