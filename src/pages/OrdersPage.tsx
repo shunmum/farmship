@@ -350,28 +350,28 @@ const OrdersPage = () => {
               </div>
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="配送ステータス" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="全て">全て</SelectItem>
+                    <SelectItem value="全て">全て（配送）</SelectItem>
                     <SelectItem value="配送前">配送前</SelectItem>
                     <SelectItem value="配送済み">配送済み</SelectItem>
                     <SelectItem value="キャンセル">キャンセル</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                  <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="入金ステータス" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="全て">全て</SelectItem>
+                    <SelectItem value="全て">全て（入金）</SelectItem>
                     <SelectItem value="未入金">未入金</SelectItem>
                     <SelectItem value="入金済み">入金済み</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-full sm:w-[130px]">
+                  <SelectTrigger className="w-full sm:w-[140px]">
                     <SelectValue placeholder="種別" />
                   </SelectTrigger>
                   <SelectContent>
