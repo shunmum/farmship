@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Printer, Clock, CheckCircle2, XCircle, FileDown } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
+import { useOrderCategories } from "@/hooks/useOrderCategories";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -19,7 +20,7 @@ import { CreateOrderDialog } from "@/components/CreateOrderDialog";
 import type { OrderCategory, OrderStatus, PaymentStatus } from "@/hooks/useOrders";
 import type { InvoiceType } from "@/types";
 
-const ORDER_CATEGORIES: OrderCategory[] = ["のし", "お中元", "お供え", "なし"];
+// 既定の種別。useOrderCategoriesからユーザー追加分も合わせて使う
 const ORDER_STATUSES: OrderStatus[] = ["配送前", "配送済み", "キャンセル"];
 const PAYMENT_STATUSES: PaymentStatus[] = ["未入金", "入金済み"];
 
@@ -55,6 +56,7 @@ const getCategoryBadge = (category?: OrderCategory) => {
 const OrdersPage = () => {
   const navigate = useNavigate();
   const { orders, updateOrder, refetch } = useOrders();
+  const { all: orderCategoriesAll, remember: rememberOrderCategory } = useOrderCategories();
   const { customers } = useCustomers();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState("全て");
@@ -366,7 +368,7 @@ const OrdersPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="全て">全て（種別）</SelectItem>
-                    {ORDER_CATEGORIES.map((c) => (
+                    {orderCategoriesAll.map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -386,6 +388,7 @@ const OrdersPage = () => {
                     <th className="pb-4 px-3 font-medium whitespace-nowrap">商品・数量</th>
                     <th className="pb-4 px-3 font-medium whitespace-nowrap">金額</th>
                     <th className="pb-4 px-3 font-medium whitespace-nowrap">配送予定日</th>
+                    <th className="pb-4 px-3 font-medium whitespace-nowrap">配送完了日</th>
                     <th className="pb-4 px-3 font-medium whitespace-nowrap">クール便</th>
                     <th className="pb-4 px-3 font-medium whitespace-nowrap">種別</th>
                     <th className="pb-4 px-3 font-medium whitespace-nowrap">請求書</th>
@@ -410,7 +413,12 @@ const OrdersPage = () => {
                         ))}
                       </td>
                       <td className="py-5 px-3 font-semibold text-primary whitespace-nowrap">¥{order.amount.toLocaleString()}</td>
-                      <td className="py-5 px-3 whitespace-nowrap">{order.deliveryDate}</td>
+                      <td className="py-5 px-3 whitespace-nowrap">{order.deliveryDate || (order.status === "配送前" ? "—" : <span className="text-xs text-muted-foreground">指定なし</span>)}</td>
+                      <td className="py-5 px-3 whitespace-nowrap text-xs text-muted-foreground">
+                        {order.deliveredAt
+                          ? new Date(order.deliveredAt).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })
+                          : "—"}
+                      </td>
                       <td className="py-5 px-3 whitespace-nowrap">
                         {order.isCoolDelivery ? (
                           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">クール</Badge>
@@ -434,7 +442,7 @@ const OrdersPage = () => {
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {ORDER_CATEGORIES.map((c) => (
+                            {orderCategoriesAll.map((c) => (
                               <SelectItem key={c} value={c}>{c}</SelectItem>
                             ))}
                           </SelectContent>
@@ -570,7 +578,7 @@ const OrdersPage = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ORDER_CATEGORIES.map((c) => (
+                          {orderCategoriesAll.map((c) => (
                             <SelectItem key={c} value={c}>{c}</SelectItem>
                           ))}
                         </SelectContent>

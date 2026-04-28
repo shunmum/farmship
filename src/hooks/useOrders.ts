@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type OrderStatus = "配送前" | "配送済み" | "キャンセル";
 export type PaymentStatus = "未入金" | "入金済み";
-export type OrderCategory = "のし" | "お中元" | "お供え" | "なし";
+// 既定の種別。これ以外もユーザーが自由入力可能（DBは text）
+export const DEFAULT_ORDER_CATEGORIES = ["なし", "のし", "お中元", "お供え", "お歳暮"] as const;
+export type OrderCategory = string;
 
 export interface OrderItem {
   productId: string;
@@ -30,6 +32,7 @@ export interface Order {
   note?: string;
   orderCategory?: OrderCategory;
   isCoolDelivery?: boolean;
+  deliveredAt?: string | null;
 }
 
 function toOrder(row: Record<string, unknown>, items: OrderItem[] = []): Order {
@@ -51,6 +54,7 @@ function toOrder(row: Record<string, unknown>, items: OrderItem[] = []): Order {
     note: (row.note as string) ?? undefined,
     orderCategory: (row.order_category as OrderCategory) ?? undefined,
     isCoolDelivery: (row.is_cool_delivery as boolean) ?? false,
+    deliveredAt: (row.delivered_at as string) ?? null,
   };
 }
 
@@ -175,7 +179,15 @@ export function useOrders() {
       if (updates.recipientName !== undefined) dbUpdates.recipient_name = updates.recipientName || null;
       if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
       if (updates.deliveryDate !== undefined) dbUpdates.delivery_date = updates.deliveryDate || null;
-      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.status !== undefined) {
+        dbUpdates.status = updates.status;
+        // 配送済みに変更したタイミングで delivered_at を記録／元に戻したらクリア
+        if (updates.status === "配送済み") {
+          dbUpdates.delivered_at = new Date().toISOString();
+        } else {
+          dbUpdates.delivered_at = null;
+        }
+      }
       if (updates.paymentStatus !== undefined) dbUpdates.payment_status = updates.paymentStatus;
       if (updates.shippingCompany !== undefined) dbUpdates.shipping_company = updates.shippingCompany || null;
       if (updates.trackingNumber !== undefined) dbUpdates.tracking_number = updates.trackingNumber || null;

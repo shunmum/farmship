@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Plus, Minus, User, MapPin, Package, Truck, CheckCircle2, PartyPopper, UserPlus, ChevronDown, ChevronUp, Search, ChevronsUpDown, Check } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useOrders } from "@/hooks/useOrders";
+import { useOrderCategories } from "@/hooks/useOrderCategories";
 import { useProducts } from "@/hooks/useProducts";
 import { useAreaShipping } from "@/hooks/useAreaShipping";
 import { usePostalCode } from "@/hooks/usePostalCode";
@@ -55,6 +56,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const { toast } = useToast();
   const { customers, addCustomer, updateCustomer, addRecipient } = useCustomers();
   const { addOrder } = useOrders();
+  const { all: orderCategoriesAll, remember: rememberOrderCategory } = useOrderCategories();
   const { products, productVariants } = useProducts();
   const { getShippingFee: getAreaShippingFee, getAreaByPrefecture } = useAreaShipping();
   const { lookup: lookupCustomerPostal } = usePostalCode();
@@ -69,6 +71,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
   const [orderNote, setOrderNote] = useState("");
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryUnspecified, setDeliveryUnspecified] = useState(false);
   const [carrier, setCarrier] = useState<"yamato" | "sagawa" | "yupack">("yamato");
   const [isCool, setIsCool] = useState(false);
   const [orderCategory, setOrderCategory] = useState<OrderCategory>("なし");
@@ -154,7 +157,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
 
   // 注文を保存して注文番号を返す（共通処理）
   const submitOrder = (): string | null => {
-    if (!selectedCustomer || !selectedRecipient || orderItems.length === 0 || !deliveryDate) return null;
+    if (!selectedCustomer || !selectedRecipient || orderItems.length === 0) return null;
+    if (!deliveryDate && !deliveryUnspecified) return null;
 
     const orderDate = new Date().toISOString().split("T")[0];
     const orderNumber = `ORD-${orderDate.replace(/-/g, "")}-${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`;
@@ -212,6 +216,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setSelectedRecipientId("");
     setOrderItems([]);
     setDeliveryDate("");
+    setDeliveryUnspecified(false);
     setCarrier("yamato");
     setIsCool(false);
     setOrderCategory("なし");
@@ -276,6 +281,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
     setSelectedRecipientId("");
     setOrderItems([]);
     setDeliveryDate("");
+    setDeliveryUnspecified(false);
     setCarrier("yamato");
     setIsCool(false);
     setOrderCategory("なし");
@@ -768,7 +774,27 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>配送予定日</Label>
-          <Input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+          <div className="flex items-center gap-3">
+            <Input
+              type="date"
+              value={deliveryUnspecified ? "" : deliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
+              disabled={deliveryUnspecified}
+              className="flex-1"
+            />
+            <label className="flex items-center gap-1.5 text-sm cursor-pointer whitespace-nowrap">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[#2d6a4f]"
+                checked={deliveryUnspecified}
+                onChange={(e) => {
+                  setDeliveryUnspecified(e.target.checked);
+                  if (e.target.checked) setDeliveryDate("");
+                }}
+              />
+              指定なし
+            </label>
+          </div>
         </div>
         <div className="space-y-2">
           <Label>配送業者</Label>
@@ -787,15 +813,22 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
         </div>
         <div className="space-y-2">
           <Label>種別</Label>
-          <Select value={orderCategory} onValueChange={(v) => setOrderCategory(v as OrderCategory)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="なし">なし</SelectItem>
-              <SelectItem value="のし">のし</SelectItem>
-              <SelectItem value="お中元">お中元</SelectItem>
-              <SelectItem value="お供え">お供え</SelectItem>
-            </SelectContent>
-          </Select>
+          <Input
+            list="order-category-list"
+            value={orderCategory}
+            onChange={(e) => setOrderCategory(e.target.value)}
+            onBlur={(e) => {
+              const v = e.target.value.trim();
+              if (v && v !== "なし") rememberOrderCategory(v);
+            }}
+            placeholder="のし / お中元 / 自由入力"
+          />
+          <datalist id="order-category-list">
+            {orderCategoriesAll.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+          <p className="text-xs text-gray-400">入力した種別はリストに保存され、次回から候補に出ます</p>
         </div>
         <div className="space-y-2">
           <Label>請求書種別</Label>
@@ -856,7 +889,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={() => setStep(3)}>戻る</Button>
-        <Button className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => setStep(5)} disabled={!deliveryDate}>次へ</Button>
+        <Button className="bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => setStep(5)} disabled={!deliveryDate && !deliveryUnspecified}>次へ</Button>
       </div>
     </div>
   );
@@ -900,7 +933,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrder
         </div>
         <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-1">
           <p className="font-semibold mb-1">配送情報</p>
-          <p>配送日: {deliveryDate}</p>
+          <p>配送日: {deliveryDate || (deliveryUnspecified ? "指定なし" : "—")}</p>
           <p>配送業者: {carrierLabel}</p>
           <p>クール便: {isCool ? "あり" : "なし"}</p>
           <p>種別: {orderCategory}</p>
