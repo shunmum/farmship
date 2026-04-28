@@ -378,62 +378,78 @@ const OrdersPage = () => {
           </CardHeader>
           <CardContent className="p-0 sm:p-6">
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+            <div className="hidden md:block">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col className="w-12" />{/* No. */}
+                  <col className="w-24" />{/* 受注日 */}
+                  <col className="w-28" />{/* 顧客名 */}
+                  <col />{/* 商品・数量（可変） */}
+                  <col className="w-24" />{/* 金額 */}
+                  <col className="w-28" />{/* 配送（予定/完了/クール） */}
+                  <col className="w-20" />{/* 種別 */}
+                  <col className="w-28" />{/* 配送ステータス */}
+                  <col className="w-20" />{/* 入金 */}
+                  <col className="w-16" />{/* 詳細 */}
+                </colgroup>
                 <thead>
-                  <tr className="border-b text-left text-sm text-muted-foreground">
-                    <th className="pb-4 px-3 font-medium w-14 whitespace-nowrap">No.</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">受注日</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">顧客名</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">商品・数量</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">金額</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">配送予定日</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">配送完了日</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">クール便</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">種別</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">請求書</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">配送ステータス</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">入金ステータス</th>
-                    <th className="pb-4 px-3 font-medium whitespace-nowrap">アクション</th>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="pb-3 px-2 font-medium">No.</th>
+                    <th className="pb-3 px-2 font-medium">受注日</th>
+                    <th className="pb-3 px-2 font-medium">顧客</th>
+                    <th className="pb-3 px-2 font-medium">商品・数量</th>
+                    <th className="pb-3 px-2 font-medium text-right">金額</th>
+                    <th className="pb-3 px-2 font-medium">配送日</th>
+                    <th className="pb-3 px-2 font-medium">種別</th>
+                    <th className="pb-3 px-2 font-medium">配送</th>
+                    <th className="pb-3 px-2 font-medium">入金</th>
+                    <th className="pb-3 px-2 font-medium"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredOrders.map((order) => (
-                    <tr key={order.id} className="border-b text-sm transition-colors hover:bg-muted/50">
-                      <td className="py-5 px-3 font-bold text-muted-foreground whitespace-nowrap">
+                    <tr key={order.id} className="border-b text-sm transition-colors hover:bg-muted/50 align-top">
+                      <td className="py-3 px-2 font-bold text-muted-foreground text-xs">
                         No.{orderNumberMap.get(order.id)}
                       </td>
-                      <td className="py-5 px-3 whitespace-nowrap">{order.orderDate}</td>
-                      <td className="py-5 px-3 font-medium whitespace-nowrap">{order.customerName}</td>
-                      <td className="py-5 px-3">
+                      <td className="py-3 px-2 text-xs">{order.orderDate}</td>
+                      <td className="py-3 px-2 font-medium">
+                        <div className="break-words">{order.customerName}</div>
+                        <div className="mt-1">
+                          {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-2">
                         {order.products.map((p, i) => (
-                          <div key={i} className="text-muted-foreground leading-relaxed">
+                          <div key={i} className="text-muted-foreground leading-snug break-words text-xs">
                             {p.productName} × {p.quantity}
                           </div>
                         ))}
                       </td>
-                      <td className="py-5 px-3 font-semibold text-primary whitespace-nowrap">¥{order.amount.toLocaleString()}</td>
-                      <td className="py-5 px-3 whitespace-nowrap">{order.deliveryDate || (order.status === "配送前" ? "—" : <span className="text-xs text-muted-foreground">指定なし</span>)}</td>
-                      <td className="py-5 px-3 whitespace-nowrap text-xs text-muted-foreground">
-                        {order.deliveredAt
-                          ? new Date(order.deliveredAt).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })
-                          : "—"}
-                      </td>
-                      <td className="py-5 px-3 whitespace-nowrap">
-                        {order.isCoolDelivery ? (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">クール</Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">なし</span>
+                      <td className="py-3 px-2 font-semibold text-primary text-right whitespace-nowrap">¥{order.amount.toLocaleString()}</td>
+                      <td className="py-3 px-2 text-xs">
+                        <div className="whitespace-nowrap">
+                          {order.deliveryDate || (order.status === "配送前"
+                            ? <span className="text-muted-foreground">—</span>
+                            : <span className="text-muted-foreground">指定なし</span>)}
+                        </div>
+                        {order.deliveredAt && (
+                          <div className="text-green-600 whitespace-nowrap mt-0.5">
+                            ✓ {new Date(order.deliveredAt).toLocaleDateString("ja-JP", { month: "2-digit", day: "2-digit" })}
+                          </div>
+                        )}
+                        {order.isCoolDelivery && (
+                          <Badge variant="outline" className="mt-1 bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">クール</Badge>
                         )}
                       </td>
-                      <td className="py-5 px-3 whitespace-nowrap">
+                      <td className="py-3 px-2">
                         <Select
                           value={order.orderCategory || "なし"}
                           onValueChange={(v) =>
                             updateOrder(order.id, { orderCategory: v as OrderCategory })
                           }
                         >
-                          <SelectTrigger className="h-7 w-[90px] text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded">
+                          <SelectTrigger className="h-7 w-full text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded">
                             <SelectValue>
                               {order.orderCategory && order.orderCategory !== "なし"
                                 ? getCategoryBadge(order.orderCategory)
@@ -448,17 +464,14 @@ const OrdersPage = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="py-5 px-3 whitespace-nowrap">
-                        {getInvoiceBadge(customerMap.get(order.customerId)?.invoiceType)}
-                      </td>
-                      <td className="py-5 px-3 whitespace-nowrap">
+                      <td className="py-3 px-2">
                         <Select
                           value={order.status}
                           onValueChange={(v) =>
                             updateOrder(order.id, { status: v as OrderStatus })
                           }
                         >
-                          <SelectTrigger className="h-8 w-auto min-w-[110px] text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
+                          <SelectTrigger className="h-7 w-full text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
                             <SelectValue>{getStatusBadge(order.status)}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
@@ -468,14 +481,14 @@ const OrdersPage = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="py-5 px-3 whitespace-nowrap">
+                      <td className="py-3 px-2">
                         <Select
                           value={order.paymentStatus}
                           onValueChange={(v) =>
                             updateOrder(order.id, { paymentStatus: v as PaymentStatus })
                           }
                         >
-                          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
+                          <SelectTrigger className="h-7 w-full text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
                             <SelectValue>{getPaymentBadge(order.paymentStatus)}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
@@ -485,17 +498,17 @@ const OrdersPage = () => {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="py-5 px-3 whitespace-nowrap">
-                        <div className="flex gap-2">
+                      <td className="py-3 px-2">
+                        <div className="flex flex-col gap-1">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="btn-hover"
+                            className="btn-hover h-7 text-xs px-2"
                             onClick={() => navigate(`/orders/${order.id}`)}
                           >
                             詳細
                           </Button>
-                          <Button variant="outline" size="sm" className="btn-hover" onClick={() => printOrder(order)}>
+                          <Button variant="outline" size="sm" className="btn-hover h-7 px-2" onClick={() => printOrder(order)}>
                             <Printer className="h-3 w-3" />
                           </Button>
                         </div>
