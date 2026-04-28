@@ -42,14 +42,17 @@ const getInvoiceBadge = (invoiceType?: InvoiceType) => {
 const getCategoryBadge = (category?: OrderCategory) => {
   if (!category || category === "なし") return null;
   const config: Record<string, string> = {
-    のし: "bg-blue-100 text-blue-700 border-blue-200",
-    お中元: "bg-orange-100 text-orange-700 border-orange-200",
-    お供え: "bg-purple-100 text-purple-700 border-purple-200",
+    のし: "bg-blue-50 text-blue-700 border-blue-200",
+    お中元: "bg-orange-50 text-orange-700 border-orange-200",
+    お歳暮: "bg-rose-50 text-rose-700 border-rose-200",
+    お供え: "bg-purple-50 text-purple-700 border-purple-200",
   };
   return (
-    <Badge variant="outline" className={config[category] || ""}>
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config[category] || "bg-slate-50 text-slate-700 border-slate-200"}`}
+    >
       {category}
-    </Badge>
+    </span>
   );
 };
 
@@ -240,39 +243,44 @@ const OrdersPage = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "配送前":
-        return <Clock className="h-4 w-4" />;
+        return <Clock className="h-3 w-3" />;
       case "配送済み":
-        return <CheckCircle2 className="h-4 w-4" />;
+        return <CheckCircle2 className="h-3 w-3" />;
       case "キャンセル":
-        return <XCircle className="h-4 w-4" />;
+        return <XCircle className="h-3 w-3" />;
       default:
         return null;
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; className: string }> = {
-      配送前: { variant: "outline", className: "border-yellow-500 text-yellow-700 bg-yellow-50" },
-      配送済み: { variant: "secondary", className: "bg-green-100 text-green-700 border-green-200" },
-      キャンセル: { variant: "destructive", className: "" },
+    const cls: Record<string, string> = {
+      配送前: "bg-amber-50 text-amber-700 border-amber-200",
+      配送済み: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      キャンセル: "bg-rose-50 text-rose-700 border-rose-200",
     };
-    const { variant, className } = config[status] || { variant: "default", className: "" };
     return (
-      <Badge variant={variant} className={className}>
-        <span className="flex items-center gap-1">
-          {getStatusIcon(status)}
-          {status}
-        </span>
-      </Badge>
+      <span
+        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${cls[status] || ""}`}
+      >
+        {getStatusIcon(status)}
+        {status}
+      </span>
     );
   };
 
   const getPaymentBadge = (paymentStatus: string) => {
     const isPaid = paymentStatus === '入金済み';
     return (
-      <Badge variant={isPaid ? "default" : "outline"} className={isPaid ? "bg-green-500" : "border-orange-500 text-orange-700 bg-orange-50"}>
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${
+          isPaid
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : "bg-orange-50 text-orange-700 border-orange-200"
+        }`}
+      >
         {paymentStatus}
-      </Badge>
+      </span>
     );
   };
 
@@ -387,9 +395,9 @@ const OrdersPage = () => {
                   <col />{/* 商品・数量（可変） */}
                   <col className="w-24" />{/* 金額 */}
                   <col className="w-28" />{/* 配送（予定/完了/クール） */}
-                  <col className="w-20" />{/* 種別 */}
-                  <col className="w-28" />{/* 配送ステータス */}
-                  <col className="w-20" />{/* 入金 */}
+                  <col className="w-24" />{/* 種別 */}
+                  <col className="w-32" />{/* 配送ステータス */}
+                  <col className="w-28" />{/* 入金 */}
                   <col className="w-16" />{/* 詳細 */}
                 </colgroup>
                 <thead>
@@ -449,7 +457,7 @@ const OrdersPage = () => {
                             updateOrder(order.id, { orderCategory: v as OrderCategory })
                           }
                         >
-                          <SelectTrigger className="h-7 w-full text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded">
+                          <SelectTrigger className="h-8 w-full text-xs border border-transparent bg-transparent px-1.5 py-1 focus:ring-1 focus:ring-primary/30 hover:border-border hover:bg-muted/30 rounded-md transition-colors [&>svg]:opacity-50">
                             <SelectValue>
                               {order.orderCategory && order.orderCategory !== "なし"
                                 ? getCategoryBadge(order.orderCategory)
@@ -471,7 +479,7 @@ const OrdersPage = () => {
                             updateOrder(order.id, { status: v as OrderStatus })
                           }
                         >
-                          <SelectTrigger className="h-7 w-full text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
+                          <SelectTrigger className="h-8 w-full text-xs border border-transparent bg-transparent px-1.5 py-1 focus:ring-1 focus:ring-primary/30 hover:border-border hover:bg-muted/30 rounded-md transition-colors [&>svg]:opacity-50">
                             <SelectValue>{getStatusBadge(order.status)}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
@@ -488,7 +496,7 @@ const OrdersPage = () => {
                             updateOrder(order.id, { paymentStatus: v as PaymentStatus })
                           }
                         >
-                          <SelectTrigger className="h-7 w-full text-xs border-0 bg-transparent p-1 focus:ring-0 hover:bg-muted/50 rounded gap-1">
+                          <SelectTrigger className="h-8 w-full text-xs border border-transparent bg-transparent px-1.5 py-1 focus:ring-1 focus:ring-primary/30 hover:border-border hover:bg-muted/30 rounded-md transition-colors [&>svg]:opacity-50">
                             <SelectValue>{getPaymentBadge(order.paymentStatus)}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
